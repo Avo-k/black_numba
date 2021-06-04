@@ -17,7 +17,7 @@ class Position(object):
         self.pieces = np.zeros((2, 6), dtype=np.uint64)  # bb for each color (2) and each piece type (6)
         self.occupancy = np.zeros(3, dtype=np.uint64)  # Combined bitboards for [white, black, both]
         self.side = 0
-        self.enpas = np.uint8(0)
+        self.enpas = no_sq
         self.castle = 0
 
 
@@ -54,12 +54,18 @@ def print_position(pos, print_info=False):
 
     if print_info:
         print("white" if not pos.side else "black", "to move")
-        print("en passant:", pos.enpas if pos.enpas else "-")
+        print("en passant:", square_to_coordinates[pos.enpas])
         casl = f"{'K' if pos.castle & wk else ''}{'Q' if pos.castle & wq else ''}" \
                f"{'k' if pos.castle & bk else ''}{'q' if pos.castle & bq else ''} "
         print("Castling:",casl if casl else "-", "\n")
 
 
+str_to_int = nb.typed.Dict.empty(nb.types.string, nb.types.int64)
+for l in range(1, 9):
+    str_to_int[str(l)] = l
+
+
+# @njit
 def parse_fen(fen: str):
     """return a Position object from a Forsyth-Edwards Notation string"""
 
@@ -68,7 +74,7 @@ def parse_fen(fen: str):
     board, side, castle, enpas, _hclock, _fclock = fen.split()
 
     pos.side = 0 if side == "w" else 1
-    pos.enpas = None if enpas == "-" else square_to_coordinates.index(enpas)
+    pos.enpas = no_sq if enpas == "-" else enpas
 
     if castle != "-":
         for i, c in enumerate("KQkq"):
@@ -92,7 +98,7 @@ def parse_fen(fen: str):
             sq_i += 1
 
         elif c.isnumeric():  # Empty
-            sq_i += int(c)
+            sq_i += str_to_int[c]
 
     for i in range(2):
         for bb in pos.pieces[i]:

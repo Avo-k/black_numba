@@ -81,8 +81,9 @@ def print_move_list(move_list):
         print(f"  {square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}"
               f"{promoted_pieces[get_move_promote_to(move)] if get_move_promote_to(move) else ''}     "
               f"{piece_to_ascii[int(bool(get_move_side(move)))][get_move_piece(move)]}         "
-              f"{int(bool(get_move_capture(move)))}         {int(bool(get_move_double(move)))}         "
-              f"{int(bool(get_move_enpas(move)))}         {int(bool(get_move_castling(move)))}")
+              f"{bool(get_move_capture(move))}         {bool(get_move_double(move))}         "
+              f"{square_to_coordinates[get_move_enpas(move)] if get_move_enpas(move) else 0}         "
+              f"{bool(get_move_castling(move))}")
 
     print("Total number of moves:", len(move_list))
 
@@ -174,7 +175,7 @@ def generate_moves(pos):
                         attacks = pop_bit(attacks, target)
 
                     # en-passant
-                    if pos.enpas:
+                    if pos.enpas != no_sq:
                         enpas_attacks = pawn_attacks[white][source] & (BIT << pos.enpas)
 
                         if enpas_attacks:
@@ -244,7 +245,7 @@ def generate_moves(pos):
                         attacks = pop_bit(attacks, target)
 
                     # en-passant
-                    if pos.enpas:
+                    if pos.enpas != no_sq:
                         enpas_attacks = pawn_attacks[black][source] & (BIT << pos.enpas)
 
                         if enpas_attacks:
@@ -343,7 +344,7 @@ def make_move(pos_orig, move, only_captures=0):
                 pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square + np.uint8(8))
 
         # reset enpas
-        pos.enpas = np.uint8(0)
+        pos.enpas = no_sq
 
         if double_push:  # set en-passant square
             if side:  # black just moved

@@ -59,10 +59,10 @@ def child_perft(board, depth):
 
 pos1 = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 time1 = {1: 20, 2: 400, 3: 8902, 4: 197281, 5: 4865609}
-pos2 = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
-time2 = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690}
-pos3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"
-time3 = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
+pos2 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"
+time2 = {1: 14, 2: 191, 3: 2812, 4: 43238, 5: 674624}
+pos3 = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+time3 = {1: 48, 2: 2039, 3: 97862, 4: 4085603, 5: 193690690}
 
 positions = [(pos1, time1), (pos2, time2), (pos3, time3)]
 
@@ -82,7 +82,8 @@ def main():
             s = time.time()
             r = perft(position, depth)
             print(r, result)
-            print(f"time depth {depth} {round(time.time() - s, 3)} sec")
+            print("depth       time       n/s")
+            print(f"  {depth}        {round(time.time() - s, 3)}       {round(r/(time.time() - s))}")
             assert r == result
             # print(f"captures    ep    castles    promo    checks    pushpush")
             # print(f"{captures}          {ep}         {castles}         {promo}        {checks}       {pushpush}")

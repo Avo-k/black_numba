@@ -20,22 +20,22 @@ big-endian rank-file mapping:
 """
 
 
-# @njit(nb.b1(nb.uint64, nb.uint8))
-def get_bit(bb: np.uint64, sq: np.uint8) -> np.uint64:
-    return np.uint64(bb & (BIT << sq))
+@njit(nb.b1(nb.uint64, nb.uint8))
+def get_bit(bb: np.uint64, sq):
+    return bb & (BIT << sq)
 
 
-# @njit(nb.uint64(nb.uint64, nb.uint8))
-def set_bit(bb: np.uint64, sq: np.uint8) -> np.uint64:
-    return np.uint64(bb | (BIT << sq))
+@njit(nb.uint64(nb.uint64, nb.uint8))
+def set_bit(bb: np.uint64, sq):
+    return bb | (BIT << sq)
 
 
-# @njit(nb.uint64(nb.uint64, nb.uint8))
-def pop_bit(bb: np.uint64, sq: np.uint8) -> np.uint64:
-    return np.uint64(bb & ~(BIT << sq))
+@njit(nb.uint64(nb.uint64, nb.uint8))
+def pop_bit(bb: np.uint64, sq):
+    return bb & ~(BIT << sq)
 
 
-# @njit(nb.uint8(nb.uint64))
+@njit(nb.uint8(nb.uint64))
 def count_bits(bb) -> int:
     c = 0
     while bb:
@@ -44,7 +44,7 @@ def count_bits(bb) -> int:
     return c
 
 
-# @njit(nb.uint8(nb.uint64))
+@njit(nb.uint8(nb.uint64))
 def get_ls1b_index(bb: np.uint64) -> int:
     return count_bits((bb & -bb) - BIT)
 

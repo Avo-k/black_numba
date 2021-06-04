@@ -3,6 +3,19 @@ from bb_operations import count_bits, print_bb
 from attack_tables import mask_bishop_attacks, mask_rook_attacks, bishop_attacks_on_the_fly, rook_attacks_on_the_fly, set_occupancy
 
 
+def little_to_big(little):
+    """change array from little to big endian"""
+
+    big = ['' for _ in range(64)]
+    c = 0
+
+    for rank in range(56, -1, -8):
+        for file in range(8):
+            big[c] = hex(little[rank + file])
+            c += 1
+    return big
+
+
 def xorshift32():
     number = np.uint(1804289383)
     while True:

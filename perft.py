@@ -1,7 +1,7 @@
 import time
 from tqdm import tqdm
 
-from position import parse_fen, print_position
+from position import parse_fen
 from move_gen import *
 
 captures = 0
@@ -21,24 +21,10 @@ def perft(board, depth, debug=False):
     for m in tqdm(moves):
         new_board = make_move(board, m)
         if new_board:
-
-            if get_move_target(m) == d3:
-                c = perft(new_board, depth - 1, True)
-                print_move(m)
-                count += c
-                print(c)
-
-            elif debug:
-                c = child_perft(new_board, depth - 1)
-                print_move(m)
-                count += c
-                print(c)
-
-            else:
-                c = child_perft(new_board, depth - 1)
-                print_move(m)
-                count += c
-                # print(c)
+            c = child_perft(new_board, depth - 1)
+            count += c
+            # print_move(m)
+            # print(c)
 
     return count
 
@@ -91,7 +77,7 @@ def main():
 
         for depth, result in t.items():
             position = parse_fen(pos)
-            if depth == 4:
+            if depth == 6:
                 break
             s = time.time()
             r = perft(position, depth)

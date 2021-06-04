@@ -81,9 +81,9 @@ def print_move_list(move_list):
         print(f"  {square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}"
               f"{promoted_pieces[get_move_promote_to(move)] if get_move_promote_to(move) else ''}     "
               f"{piece_to_ascii[int(bool(get_move_side(move)))][get_move_piece(move)]}         "
-              f"{bool(get_move_capture(move))}         {bool(get_move_double(move))}         "
-              f"{square_to_coordinates[get_move_enpas(move)] if get_move_enpas(move) else 0}         "
-              f"{bool(get_move_castling(move))}")
+              f"{int(bool(get_move_capture(move)))}         {int(bool(get_move_double(move)))}         "
+              f"{int(bool(get_move_enpas(move)))}         "
+              f"{int(bool(get_move_castling(move)))}")
 
     print("Total number of moves:", len(move_list))
 
@@ -254,7 +254,7 @@ def generate_moves(pos):
 
                     bb = pop_bit(bb, source)
 
-            if piece == king:   # target square will be checked with legality
+            if piece == king:   # target square will be checked later with legality
                 if pos.castle & bk:
                     # squares are empty
                     if not get_bit(pos.occupancy[both], f8) and not get_bit(pos.occupancy[both], g8):
@@ -328,9 +328,9 @@ def make_move(pos_orig, move, only_captures=0):
         pos.pieces[side][piece] = set_bit(pos.pieces[side][piece], target_square)
 
         if capture:  # find what we captured and erase it
-            for piece in range(6):
-                if get_bit(pos.pieces[opp][piece], target_square):
-                    pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square)
+            for opp_piece in range(6):
+                if get_bit(pos.pieces[opp][opp_piece], target_square):
+                    pos.pieces[opp][opp_piece] = pop_bit(pos.pieces[opp][opp_piece], target_square)
                     break
 
         if promote_to:  # erase pawn and place promoted piece
@@ -339,9 +339,10 @@ def make_move(pos_orig, move, only_captures=0):
 
         if enpas:  # erase the opp pawn
             if side:  # black just moved
-                pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square - np.uint8(8))
+                pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square - 8)
             else:  # white just moved
-                pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square + np.uint8(8))
+                pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square + 8)
+            # print_bb(pos.pieces[opp][piece])
 
         # reset enpas
         pos.enpas = no_sq

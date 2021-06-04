@@ -18,14 +18,13 @@ def perft(board, depth, debug=False):
         return 1
     count = 0
     moves = generate_moves(board)
-    for m in tqdm(moves):
+    for m in moves:
         new_board = make_move(board, m)
         if new_board:
             c = child_perft(new_board, depth - 1)
             count += c
-            # print_move(m)
-            # print(c)
-
+            print(f"move: {square_to_coordinates[get_move_source(m)]}{square_to_coordinates[get_move_target(m)]}"
+                  f"{promoted_pieces[get_move_promote_to(m)] if get_move_promote_to(m) else ''}     nodes: {c}")
     return count
 
 
@@ -69,21 +68,21 @@ positions = [(pos1, time1), (pos2, time2), (pos3, time3)]
 
 def main():
     for i, (pos, t) in enumerate(positions, 1):
-        if i > 1:
-            break
+        # if i > 1:
+        #     break
         print("-" * 30)
         print(" " * 8, f"POSITION {i}")
         print("-" * 30)
 
         for depth, result in t.items():
             position = parse_fen(pos)
-            if depth == 6:
+            if depth == 5:
                 break
             s = time.time()
             r = perft(position, depth)
             print(r, result)
             print("depth       time       n/s")
-            print(f"  {depth}        {round(time.time() - s, 3)}       {round(r/(time.time() - s))}")
+            print(f"  {depth}        {round(time.time() - s, 3)}       {r / (time.time() - s)}")
             assert r == result
             # print(f"captures    ep    castles    promo    checks    pushpush")
             # print(f"{captures}          {ep}         {castles}         {promo}        {checks}       {pushpush}")

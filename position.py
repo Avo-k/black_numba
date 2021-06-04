@@ -60,9 +60,7 @@ def print_position(pos, print_info=False):
         print("Castling:",casl if casl else "-", "\n")
 
 
-str_to_int = nb.typed.Dict.empty(nb.types.string, nb.types.int64)
-for l in range(1, 9):
-    str_to_int[str(l)] = l
+
 
 
 # @njit
@@ -71,10 +69,36 @@ def parse_fen(fen: str):
 
     pos = Position()
 
-    board, side, castle, enpas, _hclock, _fclock = fen.split()
+    # numba dict helper
+    num_str_to_int = nb.typed.Dict.empty(nb.types.string, nb.types.int64)
+    for num in range(1, 9):
+        num_str_to_int[str(num)] = num
 
-    pos.side = 0 if side == "w" else 1
-    pos.enpas = no_sq if enpas == "-" else enpas
+    let_str_to_int = nb.typed.Dict.empty(nb.types.string, nb.types.int64)
+    for side in (('P', 'N', 'B', 'R', 'Q', 'K'), ('p', 'n', 'b', 'r', 'q', 'k')):
+        for code, letter in enumerate(side):
+            let_str_to_int[letter] = code
+
+    squar_to_coordinates = [
+        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "-"]
+
+    board, color, castle, ep, _hclock, _fclock = fen.split()
+
+    pos.side = 0 if color == "w" else 1
+
+    if ep == "-":
+        pos.enpas = no_sq
+    else:
+        for i, sq in enumerate(squar_to_coordinates):
+            if sq == ep:
+                pos.enpas = i
 
     if castle != "-":
         for i, c in enumerate("KQkq"):
@@ -88,17 +112,17 @@ def parse_fen(fen: str):
 
     for c in board:
         if c.isupper():  # White
-            piece = letter_to_piece[white][c]
+            piece = let_str_to_int[c]
             pos.pieces[white][piece] = set_bit(pos.pieces[white][piece], squares[sq_i])
             sq_i += 1
 
         elif c.islower():  # Black
-            piece = letter_to_piece[black][c]
+            piece = let_str_to_int[c]
             pos.pieces[black][piece] = set_bit(pos.pieces[black][piece], squares[sq_i])
             sq_i += 1
 
         elif c.isnumeric():  # Empty
-            sq_i += str_to_int[c]
+            sq_i += num_str_to_int[c]
 
     for i in range(2):
         for bb in pos.pieces[i]:

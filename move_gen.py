@@ -88,6 +88,7 @@ def print_move_list(move_list):
     print("Total number of moves:", len(move_list))
 
 
+# @njit
 def is_square_attacked(pos, sq, side):
     """is side attacking sq"""
     opp = black if not side else white
@@ -121,6 +122,7 @@ def get_attacks(piece, source, pos):
         return np.uint64(sliders[piece](source, pos.occupancy[both])) & ~pos.occupancy[pos.side]
 
 
+# @njit
 def generate_moves(pos):
     """return a list of pseudo legal moves from a given Position"""
     move_list = []

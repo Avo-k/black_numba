@@ -1,5 +1,4 @@
 import time
-from tqdm import tqdm
 
 from position import parse_fen
 from move_gen import *

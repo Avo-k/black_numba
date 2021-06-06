@@ -46,6 +46,10 @@ letter_to_piece = [{'P': 0, 'N': 1, 'B': 2, 'R': 3, 'Q': 4, 'K': 5},
 piece_to_ascii = [{0: '♟', 1: '♞', 2: '♝', 3: '♜', 4: '♛', 5: '♚'},
                   {0: '♙', 1: '♘', 2: '♗', 3: '♖', 4: '♕', 5: '♔'}]
 
+promo_piece_to_str = {4: 'q', 3: 'r', 2: 'b', 1: 'n'}
+promo_str_to_piece = {v: k for k, v in promo_piece_to_str.items()}
+
+
 wk, wq, bk, bq = (np.uint8(2 ** i) for i in range(4))
 
 castling_rights = np.array(

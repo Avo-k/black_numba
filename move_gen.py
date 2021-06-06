@@ -70,18 +70,15 @@ def get_move_castling(move):
     return move & 0x800000
 
 
-promoted_pieces = {4: 'q', 3: 'r', 2: 'b', 1: 'n'}
-
-
 def get_move_uci(move):
     return f"{square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}" \
-           f"{promoted_pieces[get_move_promote_to(move)] if get_move_promote_to(move) else ''}"
+           f"{promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else ''}"
 
 
 def print_move(move):
     """print a move in UCI format"""
     print(f"{square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}"
-          f"{promoted_pieces[get_move_promote_to(move)] if get_move_promote_to(move) else ''}")
+          f"{promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else ''}")
 
 
 def print_move_list(move_list):
@@ -94,7 +91,7 @@ def print_move_list(move_list):
 
     for move in move_list:
         print(f"  {square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}"
-              f"{promoted_pieces[get_move_promote_to(move)] if get_move_promote_to(move) else ''}     "
+              f"{promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else ''}     "
               f"{piece_to_ascii[int(bool(get_move_side(move)))][get_move_piece(move)]}         "
               f"{int(bool(get_move_capture(move)))}         {int(bool(get_move_double(move)))}         "
               f"{int(bool(get_move_enpas(move)))}         "

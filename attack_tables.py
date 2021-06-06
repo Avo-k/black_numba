@@ -260,6 +260,7 @@ def init_sliders(attacks, bish):
 
     return attacks
 
+
 # sliders
 bishop_attacks = init_sliders(np.zeros((64, 512), dtype=np.uint64), bish=True)
 rook_attacks = init_sliders(np.zeros((64, 4096), dtype=np.uint64), bish=False)

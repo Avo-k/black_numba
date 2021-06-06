@@ -4,4 +4,4 @@
 
 Numba-enhanced bitboard chess engine in python
 
-current speed: 1.2M nodes/second
+current perft speed: 1.2M nodes/second

@@ -1,6 +1,5 @@
 import numpy as np
 import numba as nb
-from collections import namedtuple
 
 EMPTY = np.uint64(0)
 BIT = np.uint64(1)
@@ -35,8 +34,8 @@ FILES = np.array(
     [0x0101010101010101 << i for i in range(8)],
     dtype=np.uint64)
 
-fifi = namedtuple("File", "A B C D E F G H")
-File = fifi._make(range(8))
+# File
+fileA, fileB, fileC, fileD, fileE, fileF, fileG, fileH = np.arange(8, dtype=np.uint8)
 
 piece_to_letter = [{0: 'P', 1: 'N', 2: 'B', 3: 'R', 4: 'Q', 5: 'K'},
                    {0: 'p', 1: 'n', 2: 'b', 3: 'r', 4: 'q', 5: 'k'}]

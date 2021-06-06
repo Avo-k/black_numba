@@ -8,11 +8,11 @@ def mask_pawn_attacks(color, sq):
     bb = set_bit(EMPTY, sq)
 
     if not color:  # WHITE
-        s1 = (bb >> 7) & ~FILES[File.A]
-        s2 = (bb >> 9) & ~FILES[File.H]
+        s1 = (bb >> 7) & ~FILES[fileA]
+        s2 = (bb >> 9) & ~FILES[fileH]
     else:  # BLACK
-        s1 = (bb << 7) & ~FILES[File.H]
-        s2 = (bb << 9) & ~FILES[File.A]
+        s1 = (bb << 7) & ~FILES[fileH]
+        s2 = (bb << 9) & ~FILES[fileA]
 
     return s1 | s2
 
@@ -27,10 +27,10 @@ pawn_attacks.shape = (2, 64)
 def mask_knight_attacks(sq):
     bb = set_bit(EMPTY, sq)
 
-    m1 = ~(FILES[File.A] | FILES[File.B])
-    m2 = ~FILES[File.A]
-    m3 = ~FILES[File.H]
-    m4 = ~(FILES[File.H] | FILES[File.G])
+    m1 = ~(FILES[fileA] | FILES[fileB])
+    m2 = ~FILES[fileA]
+    m3 = ~FILES[fileH]
+    m4 = ~(FILES[fileH] | FILES[fileG])
 
     s1 = (bb & m1) << 6
     s2 = (bb & m2) << 15
@@ -55,8 +55,8 @@ knight_attacks = np.fromiter(
 def mask_king_attacks(sq):
     bb = set_bit(EMPTY, sq)
 
-    m1 = ~FILES[File.A]
-    m2 = ~FILES[File.H]
+    m1 = ~FILES[fileA]
+    m2 = ~FILES[fileH]
 
     nw = (bb & m1) << 7
     n = bb << 8

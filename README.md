@@ -1,6 +1,6 @@
 # black_numba
 
-## project still in developement
+**Project still in developement**
 
 Numba-enhanced bitboard chess engine in python
 

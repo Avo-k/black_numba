@@ -311,6 +311,8 @@ def generate_legal_moves(pos):
 def make_move(pos_orig, move, only_captures=0):
     """return new updated position if (move is legal) else 0"""
 
+    # TODO: integrate the constants to be able to compile AOT
+
     # create a copy of the position
     pos = Position()
     pos.pieces = pos_orig.pieces.copy()

@@ -1,51 +1,10 @@
 import time
 import chess
+import sys
 
 from constants import *
 from position import parse_fen
 from move_gen import generate_moves, make_move, generate_legal_moves, get_move_uci
-
-
-def debug_perft(board, depth, b, print_info=False):
-    """perft test with python-chess in parallel to narrow down the bugs"""
-    if depth == 0:
-        return 1
-    count = 0
-    moves = generate_legal_moves(board)
-    PC_moves = set([m.uci() for m in b.legal_moves])
-    BN_moves = set([get_move_uci(m) for m in moves])
-    if PC_moves != BN_moves:
-        print([m.uci() for m in b.move_stack])
-        print(b.fen())
-        if PC_moves - BN_moves:
-            print("BN does not see:", PC_moves - BN_moves)
-        else:
-            print("BN thinks she can play:", BN_moves - PC_moves)
-        raise Exception
-
-    for m in moves:
-        b.push_uci(get_move_uci(m))
-        c = debug_perft(make_move(board, m), depth - 1, b)
-        count += c
-        b.pop()
-        if print_info:
-            print(f"move: {get_move_uci(m)}     nodes: {c}")
-    return count
-
-
-@nb.njit
-def numba_perft(board, depth):
-    """fast compiled perft test"""
-    if depth == 0:
-        return 1
-    count = 0
-    moves = generate_moves(board)
-    for m in moves:
-        new_board = make_move(board, m)
-        if new_board is not None:
-            c = numba_perft(new_board, depth - 1)
-            count += c
-    return count
 
 
 positions = nb.typed.Dict.empty(key_type=nb.types.string, value_type=nb.types.uint64[:])
@@ -64,10 +23,52 @@ positions["r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0
     np.array([1, 46, 2079, 89890, 3894594, 164075551], dtype=np.uint64)
 
 
-def debug_iterative_perft(depth_max=4):
+def debug_perft(board, depth, b, print_info=False):
+    """perft test with python-chess in parallel to narrow down the bugs"""
+    if depth == 0:
+        return 1
+    count = 0
+    moves = generate_legal_moves(board)
+    PC_moves = set(m.uci() for m in b.legal_moves)
+    BN_moves = set(get_move_uci(m) for m in moves)
+    if PC_moves != BN_moves:
+        print("Moves played:", [m.uci() for m in b.move_stack])
+        print("In this position:", b.fen())
+        if PC_moves - BN_moves:
+            print("BN does not see:", PC_moves - BN_moves)
+        else:
+            print("BN thinks she can play:", BN_moves - PC_moves)
+        sys.exit()
+
+    for m in moves:
+        b.push_uci(get_move_uci(m))
+        c = debug_perft(make_move(board, m), depth - 1, b)
+        count += c
+        b.pop()
+        if print_info:
+            print(f"move: {get_move_uci(m)}     nodes: {c}")
+    return count
+
+
+@nb.njit
+def compiled_perft(board, depth):
+    """fast compiled perft test"""
+    if depth == 0:
+        return 1
+    count = 0
+    moves = generate_moves(board)
+    for m in moves:
+        new_board = make_move(board, m)
+        if new_board is not None:
+            c = compiled_perft(new_board, depth - 1)
+            count += c
+    return count
+
+
+def debug_iterative_perft(depth_max=3):
     for i, (pos, t) in enumerate(positions.items(), 1):
-        if i in (6,):
-            continue
+        # if i in (2, 5, 6):
+        #     continue
         print("-" * 30)
         print(" " * 8, f"POSITION {i}")
         print("-" * 30)
@@ -80,14 +81,14 @@ def debug_iterative_perft(depth_max=4):
             b = chess.Board(fen=pos)
             r = debug_perft(position, depth, b, print_info=False)
             if depth > 2:
-                print("depth       time       n/s")
+                print("depth     time(s)       n/s")
                 print(f"  {depth}        {round(time.time() - s, 3)}       {round(result / (time.time() - s))}")
             assert r == result
 
 
-def fast_iterative_perft(depth_max=5):
+def fast_iterative_perft(depth_max=4):
     for i, (pos, t) in enumerate(positions.items(), 1):
-        if i in (2, 6):
+        if i == 6:
             continue
         print("-" * 30)
         print(" " * 8, "POSITION", i)
@@ -98,10 +99,10 @@ def fast_iterative_perft(depth_max=5):
             if depth > depth_max:
                 continue
             s = time.time()
-            r = numba_perft(position, depth)
+            r = compiled_perft(position, depth)
             if depth > 2:
-                print("depth       time       n/s")
-                print(f"  {depth}        {round(time.time() - s, 3)}       {round(result / (time.time() - s))}")
+                print("depth     time(s)       n/s")
+                print(f"  {depth}        {round(time.time() - s, 3)}      {round(result / (time.time() - s))}")
             assert r == result
 
 

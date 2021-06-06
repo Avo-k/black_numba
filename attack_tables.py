@@ -17,11 +17,6 @@ def mask_pawn_attacks(color, sq):
     return s1 | s2
 
 
-pawn_attacks = np.fromiter(
-    (mask_pawn_attacks(color, sq) for color in range(2) for sq in squares), dtype=np.uint64, count=2 * 64)
-pawn_attacks.shape = (2, 64)
-
-
 # KNIGHT
 @njit(nb.uint64(nb.uint8))
 def mask_knight_attacks(sq):
@@ -45,11 +40,6 @@ def mask_knight_attacks(sq):
     return s1 | s2 | s3 | s4 | s5 | s6 | s7 | s8
 
 
-knight_attacks = np.fromiter(
-    (mask_knight_attacks(i) for i in squares),
-    dtype=np.uint64)
-
-
 # KING
 @njit(nb.uint64(nb.uint8))
 def mask_king_attacks(sq):
@@ -68,11 +58,6 @@ def mask_king_attacks(sq):
     w = (bb & m1) >> 1
 
     return nw | n | ne | e | se | s | sw | w
-
-
-king_attacks = np.fromiter(
-    (mask_king_attacks(i) for i in squares),
-    dtype=np.uint64)
 
 
 @njit(nb.uint64(nb.uint8))
@@ -246,17 +231,15 @@ bishop_magic_numbers = np.array([0x40040844404084,      0x2004208a004208,       
                                  0x28000010020204,      0x6000020202d0240,      0x8918844842082200,
                                  0x401001102902002], dtype=np.uint64)
 
-rook_masks = np.fromiter(
-    (mask_rook_attacks(sq) for sq in squares),
-    dtype=np.uint64)
+rook_masks = np.fromiter((mask_rook_attacks(sq) for sq in squares), dtype=np.uint64)
 
-bishop_masks = np.fromiter(
-    (mask_bishop_attacks(sq) for sq in squares),
-    dtype=np.uint64)
+bishop_masks = np.fromiter((mask_bishop_attacks(sq) for sq in squares), dtype=np.uint64)
 
 
 @njit(nb.uint64[:, :](nb.uint64[:, :], nb.b1))
 def init_sliders(attacks, bish):
+    """initialize bishop and rook attack tables with their magic numbers"""
+
     for sq in squares:
 
         attack_mask = bishop_masks[sq] if bish else rook_masks[sq]
@@ -277,31 +260,54 @@ def init_sliders(attacks, bish):
 
     return attacks
 
-
+# sliders
 bishop_attacks = init_sliders(np.zeros((64, 512), dtype=np.uint64), bish=True)
 rook_attacks = init_sliders(np.zeros((64, 4096), dtype=np.uint64), bish=False)
+
+# leapers
+pawn_attacks = np.fromiter((mask_pawn_attacks(color, sq) for color in range(2) for sq in squares), dtype=np.uint64)
+pawn_attacks.shape = (2, 64)
+
+knight_attacks = np.fromiter((mask_knight_attacks(i) for i in squares), dtype=np.uint64)
+
+king_attacks = np.fromiter((mask_king_attacks(i) for i in squares), dtype=np.uint64)
 
 
 @njit(nb.uint64(nb.uint8, nb.uint64))
 def get_bishop_attacks(sq, occ):
     occ &= bishop_masks[sq]
-    # occ *= MAGIC_BISHOP[sq]
     occ *= bishop_magic_numbers[sq]
     occ >>= 64 - bishop_relevant_bits[sq]
-
     return bishop_attacks[sq][occ]
 
 
 @njit(nb.uint64(nb.uint8, nb.uint64))
 def get_rook_attacks(sq, occ):
     occ &= rook_masks[sq]
-    # occ *= MAGIC_ROOK[sq]
     occ *= rook_magic_numbers[sq]
     occ >>= 64 - rook_relevant_bits[sq]
-
     return rook_attacks[sq][occ]
 
 
 @njit(nb.uint64(nb.uint8, nb.uint64))
 def get_queen_attacks(sq, occ):
     return get_rook_attacks(sq, occ) | get_bishop_attacks(sq, occ)
+
+
+@njit
+def get_attacks(piece, source, pos):
+    """helper function to generate moves more efficiently"""
+    if piece == knight:
+        return knight_attacks[source] & ~pos.occupancy[pos.side]
+
+    if piece == bishop:
+        return get_bishop_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
+
+    if piece == rook:
+        return get_rook_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
+
+    if piece == queen:
+        return get_queen_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
+
+    if piece == king:
+        return king_attacks[source] & ~pos.occupancy[pos.side]

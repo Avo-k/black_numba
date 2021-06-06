@@ -127,27 +127,11 @@ def print_attacked_square(pos, side):
 
 
 @njit
-def get_attacks(piece, source, pos):
-    """helper function to generate moves more efficiently"""
-    if piece == knight:
-        return knight_attacks[source] & ~pos.occupancy[pos.side]
-
-    if piece == bishop:
-        return get_bishop_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
-
-    if piece == rook:
-        return get_rook_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
-
-    if piece == queen:
-        return get_queen_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
-
-    if piece == king:
-        return king_attacks[source] & ~pos.occupancy[pos.side]
-
-
-@njit
 def generate_moves(pos):
     """return a list of pseudo legal moves from a given Position"""
+
+    # TODO: integrate the constants to be able to compile AOT
+
     move_list = []
 
     for piece in range(6):
@@ -248,7 +232,8 @@ def generate_moves(pos):
 
                             # push push
                             if a7 <= source <= h7 and not get_bit(pos.occupancy[both], target + np.uint8(8)):
-                                move_list.append(encode_move(source, target + np.uint8(8), piece, pos.side, 0, 0, 1, 0, 0))
+                                move_list.append(
+                                    encode_move(source, target + np.uint8(8), piece, pos.side, 0, 0, 1, 0, 0))
 
                     # pawn attack tables
                     attacks = pawn_attacks[black][source] & pos.occupancy[white]
@@ -278,7 +263,7 @@ def generate_moves(pos):
 
                     bb = pop_bit(bb, source)
 
-            if piece == king:   # target square will be checked later with legality
+            if piece == king:  # target square will be checked later with legality
                 if pos.castle & bk:
                     # squares are empty
                     if not get_bit(pos.occupancy[both], f8) and not get_bit(pos.occupancy[both], g8):

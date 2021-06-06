@@ -74,7 +74,7 @@ def main():
 
         for depth, result in t.items():
             position = parse_fen(pos)
-            if depth > 4:
+            if depth > 3:
                 continue
             s = time.time()
             b = chess.Board(fen=pos)

@@ -6,12 +6,12 @@ from numba.experimental import jitclass
 position_spec = [
     ('pieces', nb.uint64[:,:]),
     ('occupancy', nb.uint64[:]),
-    ('side', nb.b1),
+    ('side', nb.uint8),
     ('enpas', nb.uint8),
     ('castle', nb.uint8)]
 
 
-# @jitclass(position_spec)
+@jitclass(position_spec)
 class Position(object):
     def __init__(self):
         self.pieces = np.zeros((2, 6), dtype=np.uint64)  # bb for each color (2) and each piece type (6)
@@ -60,10 +60,7 @@ def print_position(pos, print_info=False):
         print("Castling:",casl if casl else "-", "\n")
 
 
-
-
-
-# @njit
+@njit
 def parse_fen(fen: str):
     """return a Position object from a Forsyth-Edwards Notation string"""
 

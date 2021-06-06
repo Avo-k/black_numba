@@ -25,43 +25,57 @@ def encode_move(source, target, piece, side, promote_to, capture, double, enpas,
            double << 21 | enpas << 22 | castling << 23
 
 
+@njit
 def get_move_source(move):
     return move & 0x3f
 
 
+@njit
 def get_move_target(move):
     return (move & 0xfc0) >> 6
 
 
+@njit
 def get_move_piece(move):
     return (move & 0x7000) >> 12
 
 
+@njit
 def get_move_side(move) -> (1, 2):
     return int(bool(move & 0x8000))
 
 
+@njit
 def get_move_promote_to(move):
     return (move & 0xf0000) >> 16
 
 
+@njit
 def get_move_capture(move):
     return move & 0x100000
 
 
+@njit
 def get_move_double(move):
     return move & 0x200000
 
 
+@njit
 def get_move_enpas(move):
     return move & 0x400000
 
 
+@njit
 def get_move_castling(move):
     return move & 0x800000
 
 
 promoted_pieces = {4: 'q', 3: 'r', 2: 'b', 1: 'n'}
+
+
+def get_move_uci(move):
+    return f"{square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}" \
+           f"{promoted_pieces[get_move_promote_to(move)] if get_move_promote_to(move) else ''}"
 
 
 def print_move(move):
@@ -71,6 +85,7 @@ def print_move(move):
 
 
 def print_move_list(move_list):
+    """print a nice move list"""
     if not move_list:
         print("Empty move_list")
 
@@ -88,7 +103,7 @@ def print_move_list(move_list):
     print("Total number of moves:", len(move_list))
 
 
-# @njit
+@njit
 def is_square_attacked(pos, sq, side):
     """is side attacking sq"""
     opp = black if not side else white
@@ -111,18 +126,26 @@ def print_attacked_square(pos, side):
     print_bb(attacked)
 
 
+@njit
 def get_attacks(piece, source, pos):
     """helper function to generate moves more efficiently"""
-    leapers = {king: king_attacks, knight: knight_attacks}
-    sliders = {bishop: get_bishop_attacks, rook: get_rook_attacks, queen: get_queen_attacks}
+    if piece == knight:
+        return knight_attacks[source] & ~pos.occupancy[pos.side]
 
-    if piece in leapers:
-        return np.uint64(leapers[piece][source]) & ~pos.occupancy[pos.side]
-    else:
-        return np.uint64(sliders[piece](source, pos.occupancy[both])) & ~pos.occupancy[pos.side]
+    if piece == bishop:
+        return get_bishop_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
+
+    if piece == rook:
+        return get_rook_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
+
+    if piece == queen:
+        return get_queen_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
+
+    if piece == king:
+        return king_attacks[source] & ~pos.occupancy[pos.side]
 
 
-# @njit
+@njit
 def generate_moves(pos):
     """return a list of pseudo legal moves from a given Position"""
     move_list = []
@@ -132,8 +155,8 @@ def generate_moves(pos):
         opp = white if pos.side else black
 
         # white pawns & king castling moves
-        if pos.side == white:  # white
-            if piece == pawn:  # pawn
+        if pos.side == white:
+            if piece == pawn:
                 while bb:
                     # pawn move
                     source = np.uint8(get_ls1b_index(bb))
@@ -187,11 +210,11 @@ def generate_moves(pos):
                     bb = pop_bit(bb, source)
 
             if piece == king:
-                if np.uint8(pos.castle) & np.uint8(wk):
+                if pos.castle & wk:
                     # are squares empty
                     if not get_bit(pos.occupancy[both], f1) and not get_bit(pos.occupancy[both], g1):
                         # are squares safe
-                        if not is_square_attacked(pos, e1, black) or not is_square_attacked(pos, f1, black):
+                        if not is_square_attacked(pos, e1, black) and not is_square_attacked(pos, f1, black):
                             move_list.append(encode_move(e1, g1, piece, pos.side, 0, 0, 0, 0, 1))
 
                 if pos.castle & wq:
@@ -199,14 +222,13 @@ def generate_moves(pos):
                     if not get_bit(pos.occupancy[both], d1) and not get_bit(pos.occupancy[both], c1) and not get_bit(
                             pos.occupancy[both], b1):
                         # squares are not attacked by black
-                        if not is_square_attacked(pos, e1, black) or not is_square_attacked(pos, d1, black):
+                        if not is_square_attacked(pos, e1, black) and not is_square_attacked(pos, d1, black):
                             move_list.append(encode_move(e1, c1, piece, pos.side, 0, 0, 0, 0, 1))
 
         # black pawns & king castling moves
-        if pos.side == black:  # white
-            if piece == pawn:  # pawn
+        if pos.side == black:
+            if piece == pawn:
                 while bb:
-                    # pawn move
                     source = get_ls1b_index(bb)
                     target = source + np.uint8(8)
 
@@ -261,15 +283,15 @@ def generate_moves(pos):
                     # squares are empty
                     if not get_bit(pos.occupancy[both], f8) and not get_bit(pos.occupancy[both], g8):
                         # squares are not attacked by black
-                        if not is_square_attacked(pos, e8, white) or not is_square_attacked(pos, f8, white):
+                        if not is_square_attacked(pos, e8, white) and not is_square_attacked(pos, f8, white):
                             move_list.append(encode_move(e8, g8, piece, pos.side, 0, 0, 0, 0, 1))
 
                 if pos.castle & bq:
                     # squares are empty
                     if not get_bit(pos.occupancy[both], d8) and not get_bit(pos.occupancy[both], c8) and not get_bit(
                             pos.occupancy[both], b8):
-                        # squares are not attacked by black
-                        if not is_square_attacked(pos, e8, white) or not is_square_attacked(pos, d8, white):
+                        # squares are not attacked by white
+                        if not is_square_attacked(pos, e8, white) and not is_square_attacked(pos, d8, white):
                             move_list.append(encode_move(e8, c8, piece, pos.side, 0, 0, 0, 0, 1))
 
         if piece in range(1, 6):
@@ -277,7 +299,7 @@ def generate_moves(pos):
                 source = np.uint8(get_ls1b_index(bb))
                 attacks = get_attacks(piece, source, pos)
 
-                while attacks:
+                while attacks != EMPTY:
                     target = np.uint8(get_ls1b_index(attacks))
 
                     # quiet
@@ -300,6 +322,7 @@ def generate_legal_moves(pos):
     return [move for move in generate_moves(pos) if make_move(pos, move)]
 
 
+@njit
 def make_move(pos_orig, move, only_captures=0):
     """return new updated position if (move is legal) else 0"""
 
@@ -337,14 +360,13 @@ def make_move(pos_orig, move, only_captures=0):
 
         if promote_to:  # erase pawn and place promoted piece
             pos.pieces[side][piece] = pop_bit(pos.pieces[side][piece], target_square)
-            pos.pieces[side][piece] = set_bit(pos.pieces[side][promote_to], target_square)
+            pos.pieces[side][promote_to] = set_bit(pos.pieces[side][promote_to], target_square)
 
         if enpas:  # erase the opp pawn
             if side:  # black just moved
                 pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square - 8)
             else:  # white just moved
                 pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square + 8)
-            # print_bb(pos.pieces[opp][piece])
 
         # reset enpas
         pos.enpas = no_sq
@@ -356,8 +378,18 @@ def make_move(pos_orig, move, only_captures=0):
                 pos.enpas = target_square + np.uint8(8)
 
         if castling:  # move rook accordingly
-            pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], castle_rook_move[target_square][0])
-            pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], castle_rook_move[target_square][1])
+            if target_square == g1:
+                pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], h1)
+                pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], f1)
+            elif target_square == c1:
+                pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], a1)
+                pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], d1)
+            elif target_square == g8:
+                pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], h8)
+                pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], f8)
+            elif target_square == c8:
+                pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], a8)
+                pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], d8)
 
         # update castling rights
         pos.castle &= castling_rights[source_square]
@@ -375,15 +407,17 @@ def make_move(pos_orig, move, only_captures=0):
         pos.side = opp
 
         if is_square_attacked(pos, get_ls1b_index(pos.pieces[side][king]), opp):
-            return 0
+            return
 
         else:
             return pos
 
-    # Capturing moves
-    else:
-        if get_move_capture(move):
-            return make_move(pos, move, only_captures=False)
+    return
 
-        else:
-            return 0
+    # # Capturing moves
+    # else:
+    #     if get_move_capture(move):
+    #         return make_move(pos, move, only_captures=False)
+    #
+    #     else:
+    #         return 0

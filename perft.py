@@ -4,7 +4,7 @@ import sys
 
 from constants import *
 from position import parse_fen
-from move_gen import generate_moves, make_move, generate_legal_moves, get_move_uci
+from move_gen import generate_moves, make_move, generate_legal_moves, get_move_uci, get_move_source, get_move_target
 
 
 positions = nb.typed.Dict.empty(key_type=nb.types.string, value_type=nb.types.uint64[:])
@@ -86,10 +86,8 @@ def debug_iterative_perft(depth_max=3):
             assert r == result
 
 
-def fast_iterative_perft(depth_max=4):
+def fast_iterative_perft(depth_max=5):
     for i, (pos, t) in enumerate(positions.items(), 1):
-        if i == 6:
-            continue
         print("-" * 30)
         print(" " * 8, "POSITION", i)
         print("-" * 30)
@@ -107,5 +105,5 @@ def fast_iterative_perft(depth_max=4):
 
 
 if __name__ == "__main__":
-    debug_iterative_perft()
-    # fast_iterative_perft()
+    # debug_iterative_perft()
+    fast_iterative_perft()

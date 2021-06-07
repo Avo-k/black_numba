@@ -246,10 +246,15 @@ def init_sliders(attacks, bish):
 
         relevant_bits_count = count_bits(attack_mask)
         occupancy_indices = 1 << relevant_bits_count
+        # v = set()
 
         for index in range(occupancy_indices):
             if bish:  # bishop
                 occupancy = set_occupancy(index, relevant_bits_count, attack_mask)
+                # n = occupancy * bishop_magic_numbers[sq] >> (64 - bishop_relevant_bits[sq])
+                # if n in v:
+                #     print(sq)
+                # v.add(n)
                 magic_index = (occupancy * bishop_magic_numbers[sq]) >> (64 - bishop_relevant_bits[sq])
                 attacks[sq][magic_index] = bishop_attacks_on_the_fly(sq, occupancy)
 
@@ -276,6 +281,8 @@ king_attacks = np.fromiter((mask_king_attacks(i) for i in squares), dtype=np.uin
 
 @njit(nb.uint64(nb.uint8, nb.uint64))
 def get_bishop_attacks(sq, occ):
+    if sq == 63:
+        return bishop_attacks_on_the_fly(sq, occ)
     occ &= bishop_masks[sq]
     occ *= bishop_magic_numbers[sq]
     occ >>= 64 - bishop_relevant_bits[sq]

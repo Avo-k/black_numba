@@ -106,9 +106,9 @@ def is_square_attacked(pos, sq, side):
     opp = black if not side else white
     if pawn_attacks[opp][sq] & pos.pieces[side][pawn] \
             or knight_attacks[sq] & pos.pieces[side][knight] \
-            or np.uint64(get_bishop_attacks(sq, pos.occupancy[both])) & pos.pieces[side][bishop] \
-            or np.uint64(get_rook_attacks(sq, pos.occupancy[both])) & pos.pieces[side][rook] \
-            or np.uint64(get_queen_attacks(sq, pos.occupancy[both])) & pos.pieces[side][queen] \
+            or get_bishop_attacks(sq, pos.occupancy[both]) & pos.pieces[side][bishop] \
+            or get_rook_attacks(sq, pos.occupancy[both]) & pos.pieces[side][rook] \
+            or get_queen_attacks(sq, pos.occupancy[both]) & pos.pieces[side][queen] \
             or king_attacks[sq] & pos.pieces[side][king]:
         return True
     return False

@@ -2,12 +2,12 @@ from constants import *
 from bb_operations import *
 
 material_score = np.array(((100, 305, 333, 563, 950, 10000),
-                           (-100, -305, -333, -563, -950, -10000)))
+                           (-100, -305, -333, -563, -950, -10000)), dtype=np.int64)
 
 
-@njit()
+@njit
 def evaluate(pos) -> int:
-    """return evaluation of a position"""
+    """return evaluation of a position from white perspective"""
     score = 0
 
     for color in range(2):
@@ -95,4 +95,4 @@ mirror_pst = (
     a7, b7, c7, d7, e7, f7, g7, h7,
     a8, b8, c8, d8, e8, f8, g8, h8)
 
-PST = np.array((pawn_pst, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst))
+PST = np.array((pawn_pst, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst), dtype=np.int64)

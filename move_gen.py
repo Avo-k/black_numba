@@ -396,7 +396,7 @@ def make_move(pos_orig, move, only_captures=0):
         else:
             return pos
 
-    return
+    return None
 
     # # Capturing moves
     # else:

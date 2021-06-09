@@ -2,9 +2,8 @@ from constants import *
 from bb_operations import *
 from numba.experimental import jitclass
 
-
 position_spec = [
-    ('pieces', nb.uint64[:,:]),
+    ('pieces', nb.uint64[:, :]),
     ('occupancy', nb.uint64[:]),
     ('side', nb.uint8),
     ('enpas', nb.uint8),
@@ -12,7 +11,7 @@ position_spec = [
 
 
 @jitclass(position_spec)
-class Position(object):
+class Position:
     def __init__(self):
         self.pieces = np.zeros((2, 6), dtype=np.uint64)  # bb for each color (2) and each piece type (6)
         self.occupancy = np.zeros(3, dtype=np.uint64)  # Combined bitboards for [white, black, both]
@@ -57,10 +56,10 @@ def print_position(pos, print_info=False):
         print("en passant:", square_to_coordinates[pos.enpas])
         casl = f"{'K' if pos.castle & wk else ''}{'Q' if pos.castle & wq else ''}" \
                f"{'k' if pos.castle & bk else ''}{'q' if pos.castle & bq else ''} "
-        print("Castling:",casl if casl else "-", "\n")
+        print("Castling:", casl if casl else "-", "\n")
 
 
-@njit
+@njit(Position.class_type.instance_type(nb.types.string))
 def parse_fen(fen: str):
     """return a Position object from a Forsyth-Edwards Notation string"""
 
@@ -97,12 +96,10 @@ def parse_fen(fen: str):
             if sq == ep:
                 pos.enpas = i
 
-    if castle != "-":
-        for i, c in enumerate("KQkq"):
-            if c in castle:
-                pos.castle += (2**i)
-    else:
-        pos.castle = 0
+    pos.castle = 0
+    for i, c in enumerate("KQkq"):
+        if c in castle:
+            pos.castle += (2 ** i)
 
     squares = np.arange(64, dtype=np.uint8)
     sq_i = 0
@@ -128,4 +125,3 @@ def parse_fen(fen: str):
     pos.occupancy[both] = pos.occupancy[white] | pos.occupancy[black]
 
     return pos
-

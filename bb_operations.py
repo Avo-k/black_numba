@@ -1,5 +1,4 @@
 from constants import BIT
-import numpy as np
 from numba import njit
 import numba as nb
 
@@ -20,22 +19,22 @@ big-endian rank-file mapping:
 """
 
 
-@njit(nb.b1(nb.uint64, nb.uint8))
-def get_bit(bb: np.uint64, sq):
+@njit(nb.b1(nb.uint64, nb.uint8), cache=True)
+def get_bit(bb, sq):
     return bb & (BIT << sq)
 
 
-@njit(nb.uint64(nb.uint64, nb.uint8))
-def set_bit(bb: np.uint64, sq):
+@njit(nb.uint64(nb.uint64, nb.uint8), cache=True)
+def set_bit(bb, sq):
     return bb | (BIT << sq)
 
 
-@njit(nb.uint64(nb.uint64, nb.uint8))
-def pop_bit(bb: np.uint64, sq):
+@njit(nb.uint64(nb.uint64, nb.uint8), cache=True)
+def pop_bit(bb, sq):
     return bb & ~(BIT << sq)
 
 
-@njit(nb.uint8(nb.uint64))
+@njit(nb.uint8(nb.uint64), cache=True)
 def count_bits(bb) -> int:
     c = 0
     while bb:
@@ -44,8 +43,8 @@ def count_bits(bb) -> int:
     return c
 
 
-@njit(nb.uint8(nb.uint64))
-def get_ls1b_index(bb: np.uint64) -> int:
+@njit(nb.uint8(nb.uint64), cache=True)
+def get_ls1b_index(bb) -> int:
     return count_bits((bb & -bb) - BIT)
 
 
@@ -54,7 +53,7 @@ def print_bb(bb):
     for rank in range(8):
         r = ""
         for file in range(8):
-            sq = np.uint8(rank * 8 + file)
+            sq = rank * 8 + file
             r += f" {'1' if get_bit(bb, sq) else '·'} "
         print(8 - rank, r)
     print("   A  B  C  D  E  F  G  H")

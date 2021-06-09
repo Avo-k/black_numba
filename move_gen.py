@@ -1,6 +1,6 @@
+from attack_tables import is_square_attacked, get_attacks, pawn_attacks
 from constants import *
 from bb_operations import *
-from attack_tables import *
 from position import Position
 
 """
@@ -19,60 +19,71 @@ from position import Position
 """
 
 
-@njit
+@njit(cache=True)
 def encode_move(source, target, piece, side, promote_to, capture, double, enpas, castling):
     return source | target << 6 | piece << 12 | side << 15 | promote_to << 16 | capture << 20 | \
            double << 21 | enpas << 22 | castling << 23
 
 
-@njit
+@njit(cache=True)
 def get_move_source(move):
     return move & 0x3f
 
 
-@njit
+@njit(cache=True)
 def get_move_target(move):
     return (move & 0xfc0) >> 6
 
 
-@njit
+@njit(cache=True)
 def get_move_piece(move):
     return (move & 0x7000) >> 12
 
 
-@njit
+@njit(cache=True)
 def get_move_side(move) -> (1, 2):
     return int(bool(move & 0x8000))
 
 
-@njit
+@njit(cache=True)
 def get_move_promote_to(move):
     return (move & 0xf0000) >> 16
 
 
-@njit
+@njit(cache=True)
 def get_move_capture(move):
     return move & 0x100000
 
 
-@njit
+@njit(cache=True)
 def get_move_double(move):
     return move & 0x200000
 
 
-@njit
+@njit(cache=True)
 def get_move_enpas(move):
     return move & 0x400000
 
 
-@njit
+@njit(cache=True)
 def get_move_castling(move):
     return move & 0x800000
 
 
+@njit(cache=True)
 def get_move_uci(move):
-    return f"{square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}" \
-           f"{promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else ''}"
+    square_to_coordinates = [
+        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "-"]
+    promo_piece_to_str = ['p', 'n', 'b', 'r', 'q', 'k']
+    return str(square_to_coordinates[get_move_source(move)]) + str(square_to_coordinates[get_move_target(move)]) + \
+           (promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else '')
 
 
 def print_move(move):
@@ -100,20 +111,6 @@ def print_move_list(move_list):
     print("Total number of moves:", len(move_list))
 
 
-@njit
-def is_square_attacked(pos, sq, side):
-    """is side attacking sq"""
-    opp = black if not side else white
-    if pawn_attacks[opp][sq] & pos.pieces[side][pawn] \
-            or knight_attacks[sq] & pos.pieces[side][knight] \
-            or get_bishop_attacks(sq, pos.occupancy[both]) & pos.pieces[side][bishop] \
-            or get_rook_attacks(sq, pos.occupancy[both]) & pos.pieces[side][rook] \
-            or get_queen_attacks(sq, pos.occupancy[both]) & pos.pieces[side][queen] \
-            or king_attacks[sq] & pos.pieces[side][king]:
-        return True
-    return False
-
-
 def print_attacked_square(pos, side):
     """print a bitboard of all squares attacked by a given side"""
     attacked = EMPTY
@@ -133,15 +130,15 @@ def generate_moves(pos):
 
     for piece in range(6):
         bb = pos.pieces[pos.side][piece]
-        opp = white if pos.side else black
+        opp = pos.side ^ 1
 
         # white pawns & king castling moves
         if pos.side == white:
             if piece == pawn:
                 while bb:
                     # pawn move
-                    source = np.uint8(get_ls1b_index(bb))
-                    target = source - np.uint8(8)
+                    source = get_ls1b_index(bb)
+                    target = source - 8
 
                     # quiet pawn move
                     if not target < a8 and not get_bit(pos.occupancy[both], target):
@@ -158,9 +155,9 @@ def generate_moves(pos):
                             move_list.append(encode_move(source, target, piece, pos.side, 0, 0, 0, 0, 0))
 
                             # push push
-                            if a2 <= source <= h2 and not get_bit(pos.occupancy[both], target - np.uint8(8)):
+                            if a2 <= source <= h2 and not get_bit(pos.occupancy[both], target - 8):
                                 move_list.append(
-                                    encode_move(source, target - np.uint8(8), piece, pos.side, 0, 0, 1, 0, 0))
+                                    encode_move(source, target - 8, piece, pos.side, 0, 0, 1, 0, 0))
 
                     # pawn attack tables
                     attacks = pawn_attacks[white][source] & pos.occupancy[black]
@@ -211,7 +208,7 @@ def generate_moves(pos):
             if piece == pawn:
                 while bb:
                     source = get_ls1b_index(bb)
-                    target = source + np.uint8(8)
+                    target = source + 8
 
                     # quiet pawn move
                     if not target > h1 and not get_bit(pos.occupancy[both], target):
@@ -228,9 +225,9 @@ def generate_moves(pos):
                             move_list.append(encode_move(source, target, piece, pos.side, 0, 0, 0, 0, 0))
 
                             # push push
-                            if a7 <= source <= h7 and not get_bit(pos.occupancy[both], target + np.uint8(8)):
+                            if a7 <= source <= h7 and not get_bit(pos.occupancy[both], target + 8):
                                 move_list.append(
-                                    encode_move(source, target + np.uint8(8), piece, pos.side, 0, 0, 1, 0, 0))
+                                    encode_move(source, target + 8, piece, pos.side, 0, 0, 1, 0, 0))
 
                     # pawn attack tables
                     attacks = pawn_attacks[black][source] & pos.occupancy[white]
@@ -278,11 +275,11 @@ def generate_moves(pos):
 
         if piece in range(1, 6):
             while bb:
-                source = np.uint8(get_ls1b_index(bb))
+                source = get_ls1b_index(bb)
                 attacks = get_attacks(piece, source, pos)
 
                 while attacks != EMPTY:
-                    target = np.uint8(get_ls1b_index(attacks))
+                    target = get_ls1b_index(attacks)
 
                     # quiet
                     if not get_bit(pos.occupancy[opp], target):
@@ -322,11 +319,11 @@ def make_move(pos_orig, move, only_captures=0):
     if not only_captures:
 
         # parse move
-        source_square = np.uint8(get_move_source(move))
-        target_square = np.uint8(get_move_target(move))
+        source_square = get_move_source(move)
+        target_square = get_move_target(move)
         piece = get_move_piece(move)
         side = get_move_side(move)
-        opp = white if side else black
+        opp = side ^ 1
         promote_to = get_move_promote_to(move)
         capture = get_move_capture(move)
         double_push = get_move_double(move)
@@ -357,9 +354,9 @@ def make_move(pos_orig, move, only_captures=0):
 
         if double_push:  # set en-passant square
             if side:  # black just moved
-                pos.enpas = target_square - np.uint8(8)
+                pos.enpas = target_square - 8
             else:  # white just moved
-                pos.enpas = target_square + np.uint8(8)
+                pos.enpas = target_square + 8
 
         if castling:  # move rook accordingly
             if target_square == g1:
@@ -383,25 +380,20 @@ def make_move(pos_orig, move, only_captures=0):
         pos.occupancy = np.zeros(3, dtype=np.uint64)
 
         # update occupancy
-        for color in (white, black):
+        for color in range(2):
             for bb in pos.pieces[color]:
                 pos.occupancy[color] |= bb
             pos.occupancy[both] |= pos.occupancy[color]
 
         pos.side = opp
 
-        if is_square_attacked(pos, get_ls1b_index(pos.pieces[side][king]), opp):
-            return None
-
-        else:
+        if not is_square_attacked(pos, get_ls1b_index(pos.pieces[side][king]), opp):
             return pos
 
-    return None
+    # Capturing moves
+    else:
+        if get_move_capture(move):
+            return make_move(pos, move, only_captures=False)
+        return None
 
-    # # Capturing moves
-    # else:
-    #     if get_move_capture(move):
-    #         return make_move(pos, move, only_captures=False)
-    #
-    #     else:
-    #         return 0
+    return None

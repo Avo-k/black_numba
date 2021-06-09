@@ -3,7 +3,7 @@ from bb_operations import *
 
 
 # PAWN ATTACKS
-@njit(nb.uint64(nb.b1, nb.uint8))
+@njit(nb.uint64(nb.b1, nb.uint8), cache=True)
 def mask_pawn_attacks(color, sq):
     bb = set_bit(EMPTY, sq)
 
@@ -18,7 +18,7 @@ def mask_pawn_attacks(color, sq):
 
 
 # KNIGHT
-@njit(nb.uint64(nb.uint8))
+@njit(nb.uint64(nb.uint8), cache=True)
 def mask_knight_attacks(sq):
     bb = set_bit(EMPTY, sq)
 
@@ -41,7 +41,7 @@ def mask_knight_attacks(sq):
 
 
 # KING
-@njit(nb.uint64(nb.uint8))
+@njit(nb.uint64(nb.uint8), cache=True)
 def mask_king_attacks(sq):
     bb = set_bit(EMPTY, sq)
 
@@ -60,7 +60,7 @@ def mask_king_attacks(sq):
     return nw | n | ne | e | se | s | sw | w
 
 
-@njit(nb.uint64(nb.uint8))
+@njit(nb.uint64(nb.uint8), cache=True)
 def mask_bishop_attacks(sq):
     attacks = EMPTY
     tr = sq // 8
@@ -77,7 +77,7 @@ def mask_bishop_attacks(sq):
     return attacks
 
 
-@njit(nb.uint64(nb.uint8))
+@njit(nb.uint64(nb.uint8), cache=True)
 def mask_rook_attacks(sq):
     attacks = EMPTY
     tr = sq // 8
@@ -99,7 +99,7 @@ def mask_rook_attacks(sq):
     return attacks
 
 
-@njit(nb.uint64(nb.uint8, nb.uint64))
+@njit(nb.uint64(nb.uint8, nb.uint64), cache=True)
 def bishop_attacks_on_the_fly(sq, block):
     attacks = EMPTY
     tr = sq // 8
@@ -119,7 +119,7 @@ def bishop_attacks_on_the_fly(sq, block):
     return attacks
 
 
-@njit(nb.uint64(nb.uint8, nb.uint64))
+@njit(nb.uint64(nb.uint8, nb.uint64), cache=True)
 def rook_attacks_on_the_fly(sq, block):
     attacks = EMPTY
     tr = sq // 8
@@ -147,7 +147,7 @@ def rook_attacks_on_the_fly(sq, block):
     return attacks
 
 
-@njit(nb.uint64(nb.uint16, nb.uint8, nb.uint64))
+@njit(nb.uint64(nb.uint16, nb.uint8, nb.uint64), cache=True)
 def set_occupancy(index, bits_in_mask, attack_mask):
     occupancy = EMPTY
 
@@ -236,12 +236,11 @@ rook_masks = np.fromiter((mask_rook_attacks(sq) for sq in squares), dtype=np.uin
 bishop_masks = np.fromiter((mask_bishop_attacks(sq) for sq in squares), dtype=np.uint64)
 
 
-@njit(nb.uint64[:, :](nb.uint64[:, :], nb.b1))
+@njit(nb.uint64[:, :](nb.uint64[:, :], nb.b1), cache=True)
 def init_sliders(attacks, bish):
     """initialize bishop and rook attack tables with their magic numbers"""
 
     for sq in squares:
-
         attack_mask = bishop_masks[sq] if bish else rook_masks[sq]
 
         relevant_bits_count = count_bits(attack_mask)
@@ -263,8 +262,8 @@ def init_sliders(attacks, bish):
 
 
 # sliders
-bishop_attacks = init_sliders(np.zeros((64, 512), dtype=np.uint64), bish=True)
-rook_attacks = init_sliders(np.zeros((64, 4096), dtype=np.uint64), bish=False)
+bishop_attacks = init_sliders(np.empty((64, 512), dtype=np.uint64), bish=True)
+rook_attacks = init_sliders(np.empty((64, 4096), dtype=np.uint64), bish=False)
 
 # leapers
 pawn_attacks = np.fromiter((mask_pawn_attacks(color, sq) for color in range(2) for sq in squares), dtype=np.uint64)
@@ -275,7 +274,7 @@ knight_attacks = np.fromiter((mask_knight_attacks(i) for i in squares), dtype=np
 king_attacks = np.fromiter((mask_king_attacks(i) for i in squares), dtype=np.uint64)
 
 
-@njit(nb.uint64(nb.uint8, nb.uint64))
+@njit(nb.uint64(nb.uint8, nb.uint64), cache=True)
 def get_bishop_attacks(sq, occ):
     if sq == 63:
         return bishop_attacks_on_the_fly(sq, occ)
@@ -303,15 +302,25 @@ def get_attacks(piece, source, pos):
     """helper function to generate moves more efficiently"""
     if piece == knight:
         return knight_attacks[source] & ~pos.occupancy[pos.side]
-
     if piece == bishop:
         return get_bishop_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
-
     if piece == rook:
         return get_rook_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
-
     if piece == queen:
         return get_queen_attacks(source, pos.occupancy[both]) & ~pos.occupancy[pos.side]
-
     if piece == king:
         return king_attacks[source] & ~pos.occupancy[pos.side]
+
+
+@njit
+def is_square_attacked(pos, sq, side):
+    """is side attacking sq"""
+    opp = side ^ 1
+    if pawn_attacks[opp][sq] & pos.pieces[side][pawn] \
+            or knight_attacks[sq] & pos.pieces[side][knight] \
+            or get_bishop_attacks(sq, pos.occupancy[both]) & pos.pieces[side][bishop] \
+            or get_rook_attacks(sq, pos.occupancy[both]) & pos.pieces[side][rook] \
+            or get_queen_attacks(sq, pos.occupancy[both]) & pos.pieces[side][queen] \
+            or king_attacks[sq] & pos.pieces[side][king]:
+        return True
+    return False

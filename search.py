@@ -7,9 +7,7 @@ from collections import namedtuple
 
 def random_move(pos) -> int:
     """return a random legal move"""
-
     legal_moves = generate_legal_moves(pos)
-
     return np.random.choice(legal_moves) if legal_moves else None
 
 
@@ -33,18 +31,22 @@ class Black_numba:
         self.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
         # history moves [side][piece][square]
         self.history_moves = np.zeros((2, 6, 64), dtype=np.uint64)
-        # Principal Variation Table
+        # Principal Variation (PV)
         self.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
         self.pv_lenght = np.zeros(MAX_PLY, dtype=np.uint8)
+        # self.follow_pv = 0
+        # self.score_pv = 0
 
 
 @njit
 def search(bot, pos, print_info=False):
-    """return the best move (uci) in a position"""
+    """yield depth searched, best move, score (cp)"""
     bot.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
     bot.history_moves = np.zeros((2, 6, 64), dtype=np.uint64)
     bot.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
     bot.pv_lenght = np.zeros(MAX_PLY, dtype=np.uint8)
+    # bot.follow_pv = 0
+    # bot.score_pv = 0
     bot.nodes = 0
 
     for depth in range(1, 100):
@@ -68,6 +70,8 @@ def quiescence(bot, pos, alpha, beta):
         return beta
 
     alpha = max(alpha, evaluation)
+
+
 
     move_list = [(m, score_move(bot, pos, m)) for m in generate_moves(pos)]
     move_list.sort(reverse=True, key=lambda m: m[1])
@@ -142,6 +146,14 @@ def negamax(bot, pos, depth, alpha, beta):
             return 0
 
     return alpha
+
+
+def enable_pv_scoring(bot, move_list):
+    bot.follow_pv = 0
+
+    for move in move_list:
+        if bot.pv_table[0][bot.ply] == move:
+            score_pv = 1
 
 
 @njit(nb.uint64(Black_numba.class_type.instance_type, Position.class_type.instance_type, nb.uint64), cache=True)

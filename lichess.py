@@ -127,10 +127,24 @@ class Game:
         self.moves += get_move_uci(move)
 
 
-print("ready to play")
+print("id name black_numba")
+print("id name Avo-k")
 for event in client.bots.stream_incoming_events():
     if event['type'] == 'challenge':
-        client.bots.accept_challenge(event['challenge']['id'])
+        challenge = event['challenge']
+        if challenge['speed'] in ('bullet', 'blitz', 'rapid', 'classic'):
+            if challenge['variant']['short'] in ("Std", "FEN"):
+                client.bots.accept_challenge(challenge['id'])
+                print('challenge accepted!')
+        else:
+            client.bots.decline_challenge(challenge['id'])
+
     elif event['type'] == 'gameStart':
-        game = Game(client, event['game']['id'])
+        print("new game")
+        game_id = event['game']['id']
+        game = Game(client=client, game_id=game_id)
         game.run()
+
+    else:  # challengeDeclined, gameFinish, challengeCanceled
+        if event['type'] not in ('challengeDeclined', 'gameFinish', 'challengeCanceled'):
+            print('NEW EVENT', event)

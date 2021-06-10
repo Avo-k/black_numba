@@ -13,8 +13,6 @@ def random_move(pos) -> int:
 
 Entry = namedtuple('Entry', 'lower upper')
 
-Bot = namedtuple('bot', 'best_move nodes ply')
-
 
 @nb.experimental.jitclass([
     ("nodes", nb.uint64),
@@ -22,7 +20,9 @@ Bot = namedtuple('bot', 'best_move nodes ply')
     ("killer_moves", nb.uint64[:, :]),
     ("history_moves", nb.uint64[:, :, :]),
     ("pv_table", nb.uint64[:, :]),
-    ("pv_lenght", nb.uint8[:])])
+    ("pv_length", nb.uint8[:]),
+    ("follow_pv", nb.b1),
+    ("score_pv", nb.b1)])
 class Black_numba:
     def __init__(self):
         self.nodes = 0
@@ -33,28 +33,26 @@ class Black_numba:
         self.history_moves = np.zeros((2, 6, 64), dtype=np.uint64)
         # Principal Variation (PV)
         self.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
-        self.pv_lenght = np.zeros(MAX_PLY, dtype=np.uint8)
-        # self.follow_pv = 0
-        # self.score_pv = 0
+        self.pv_length = np.zeros(MAX_PLY, dtype=np.uint8)
+        self.follow_pv = False
+        self.score_pv = False
 
 
 @njit
-def search(bot, pos, print_info=False):
+def search(bot, pos, print_info=False, depth_max=9):
     """yield depth searched, best move, score (cp)"""
     bot.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
     bot.history_moves = np.zeros((2, 6, 64), dtype=np.uint64)
     bot.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
-    bot.pv_lenght = np.zeros(MAX_PLY, dtype=np.uint8)
-    # bot.follow_pv = 0
-    # bot.score_pv = 0
-    bot.nodes = 0
+    bot.pv_length = np.zeros(MAX_PLY, dtype=np.uint8)
+    bot.score_pv = False
 
-    for depth in range(1, 100):
-
+    for depth in range(1, depth_max+1):
+        bot.follow_pv = True
+        bot.nodes = 0
         score = negamax(bot, pos, depth, -10 ** 6, 10 ** 6)
-
         if print_info:
-            pv_line = [get_move_uci(bot.pv_table[0][c]) for c in range(depth)]
+            pv_line = [get_move_uci(bot.pv_table[0][c]) for c in range(bot.pv_length[0])]
             print("info score cp", score, "depth", depth, "nodes", bot.nodes, "pv", " ".join(pv_line))
 
         # print("best move", get_move_uci(bot.pv_table[0][0]))
@@ -63,56 +61,64 @@ def search(bot, pos, print_info=False):
 
 @njit
 def quiescence(bot, pos, alpha, beta):
-    evaluation = evaluate(pos)
     bot.nodes += 1
+    evaluation = evaluate(pos)
 
     if evaluation >= beta:
         return beta
 
     alpha = max(alpha, evaluation)
 
-
-
     move_list = [(m, score_move(bot, pos, m)) for m in generate_moves(pos)]
     move_list.sort(reverse=True, key=lambda m: m[1])
 
     for move in move_list:
         new_pos = make_move(pos, move[0], only_captures=True)
-        if new_pos is None:  # illegal move
-            continue
         bot.ply += 1
+        if new_pos is None:  # illegal move
+            bot.ply -= 1
+            continue
         score = -quiescence(bot, new_pos, -beta, -alpha)
         bot.ply -= 1
         if score >= beta:
             return beta
         alpha = max(alpha, score)
-
     return alpha
 
 
 @njit
 def negamax(bot, pos, depth, alpha, beta):
     """return the best move given a position"""
+
+    bot.pv_length[bot.ply] = bot.ply
+
     if depth == 0:
         return quiescence(bot, pos, alpha, beta)
 
-    # We are way too deep
+    # We are way too deep for lots of arrays
     if bot.ply > MAX_PLY - 1:
         return evaluate(pos)
 
     bot.nodes += 1
-    bot.pv_lenght[bot.ply] = bot.ply
     in_check = is_square_attacked(pos, get_ls1b_index(pos.pieces[pos.side][5]), pos.side ^ 1)
+    if in_check:
+        depth += 1
+
+
     legal_moves = 0
     # alphaorig = alpha
 
-    if in_check: depth += 1
+    move_list = generate_moves(pos)
 
-    move_list = [(m, score_move(bot, pos, m)) for m in generate_moves(pos)]
+    if bot.follow_pv:
+        enable_pv_scoring(bot, move_list)
+
+    # Decorate list with scores
+    move_list = [(m, score_move(bot, pos, m)) for m in move_list]
+    # Move ordering
     move_list.sort(reverse=True, key=lambda m: m[1])
 
-    for move in move_list:
-        move = move[0]
+    for move, _ in move_list:
         bot.ply += 1
         new_pos = make_move(pos, move)
         if new_pos is None:  # illegal move
@@ -124,20 +130,26 @@ def negamax(bot, pos, depth, alpha, beta):
 
         # fail-hard beta cutoff
         if score >= beta:
+            # if quiet move
             if not get_move_capture(move):
                 bot.killer_moves[1][bot.ply] = bot.killer_moves[0][bot.ply]
                 bot.killer_moves[0][bot.ply] = move
+            # fail high
             return beta
 
         if score > alpha:
             if not get_move_capture(move):
+                # store history move
                 bot.history_moves[pos.side][get_move_piece(move)][get_move_target(move)] += depth
+
             alpha = score
 
             bot.pv_table[bot.ply][bot.ply] = move
-            for next_ply in range(bot.ply + 1, bot.pv_lenght[bot.ply + 1]):
+
+            for next_ply in range(bot.ply + 1, bot.pv_length[bot.ply + 1]):
                 bot.pv_table[bot.ply][next_ply] = bot.pv_table[bot.ply + 1][next_ply]
-            bot.pv_lenght[bot.ply] = bot.pv_lenght[bot.ply + 1]
+
+            bot.pv_length[bot.ply] = bot.pv_length[bot.ply + 1]
 
     if legal_moves == 0:
         if in_check:  # checkmate
@@ -148,17 +160,24 @@ def negamax(bot, pos, depth, alpha, beta):
     return alpha
 
 
+@njit
 def enable_pv_scoring(bot, move_list):
-    bot.follow_pv = 0
-
+    bot.follow_pv = False
     for move in move_list:
         if bot.pv_table[0][bot.ply] == move:
-            score_pv = 1
+            bot.score_pv = True
+            bot.follow_pv = True
+            break
 
 
 @njit(nb.uint64(Black_numba.class_type.instance_type, Position.class_type.instance_type, nb.uint64), cache=True)
 def score_move(bot, pos, move) -> int:
     """return a score representing the move potential"""
+
+    if bot.score_pv:    # PV move
+        if bot.pv_table[0][bot.ply] == move:
+            bot.score_pv = False
+            return 20000
 
     if get_move_capture(move):  # capture move
         attacker = get_move_piece(move)
@@ -168,7 +187,7 @@ def score_move(bot, pos, move) -> int:
             if get_bit(bb, victim_square):
                 victim = p
                 break
-        return mvv_lva[attacker][victim] + 10 ** 4
+        return mvv_lva[attacker][victim] + 10000
 
     else:  # quiet move
         if bot.killer_moves[0][bot.ply] == move:
@@ -179,24 +198,10 @@ def score_move(bot, pos, move) -> int:
             return bot.history_moves[get_move_side(move)][get_move_piece(move)][get_move_target(move)]
 
 
+@njit
 def print_move_scores(bot, pos):
-    move_list = generate_moves(pos)
-
-    decorated_ml = [(m, score_move(bot, pos, m)) for m in move_list]
-
+    decorated_ml = [(m, score_move(bot, pos, m)) for m in generate_moves(pos)]
     decorated_ml.sort(reverse=True, key=lambda m: m[1])
 
     for move in decorated_ml:
-        print(f"move: {get_move_uci(move[0])}  score: {move[1]}")
-
-
-# to delete
-@njit
-def sorted_move_list(bot, pos, move_list):
-    """return a sorted move list using the Decorate-Sort-Undecorate method"""
-
-    decorated_ml = [(m, score_move(bot, pos, m)) for m in move_list]
-
-    decorated_ml.sort(reverse=True, key=lambda m: m[1])
-
-    return [m[0] for m in decorated_ml]
+        print("move:", get_move_uci(move[0]),  "score:", move[1])

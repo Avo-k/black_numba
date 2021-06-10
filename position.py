@@ -23,33 +23,27 @@ class Position:
 def print_position(pos, print_info=False):
     print("\n")
     for rank in range(8):
-        r = " "
+        r = " +---+---+---+---+---+---+---+---+\n |"
         for file in range(8):
             sq = np.uint8(rank * 8 + file)
 
-            # piece is white
-            if get_bit(pos.occupancy[white], sq):
-                for piece, bb in enumerate(pos.pieces[white]):
-                    if get_bit(bb, sq):
-                        r += f" {piece_to_letter[white][piece]} "
-                        # print(f"{piece_names[piece]} on {square_to_coordinates[sq]}")
-                        break
-
-            # piece is black
-            elif get_bit(pos.occupancy[black], sq):
-                for i, bb in enumerate(pos.pieces[black]):
-                    if get_bit(bb, sq):
-                        r += f" {piece_to_letter[black][i]} "
-                        break
+            for side in range(2):
+                if get_bit(pos.occupancy[side], sq):
+                    for piece, bb in enumerate(pos.pieces[side]):
+                        if get_bit(bb, sq):
+                            r += f" {piece_to_letter[side][piece]} |"
+                            break
+                    break
 
             # empty square
             else:
-                r += " · "
+                r += "   |"
 
         # assert len(r) == 25
-        print(8 - rank, r)
-
-    print("\n    A  B  C  D  E  F  G  H\n")
+        r += f" {8 - rank}"
+        print(r)
+    print(" +---+---+---+---+---+---+---+---+")
+    print("   A   B   C   D   E   F   G   H\n\n")
 
     if print_info:
         print("white" if not pos.side else "black", "to move")

@@ -1,7 +1,7 @@
 import berserk
 import time
 
-from position import parse_fen
+from position import parse_fen, print_position
 from constants import start_position
 from search import Black_numba, search, random_move
 from move_gen import get_move_uci, make_move
@@ -25,7 +25,6 @@ class Game:
         self.pos = parse_fen(start_position)
         self.moves = ""
         self.bot = Black_numba()
-        self.deltas = []
 
     def run(self):
         print("game start")
@@ -92,12 +91,8 @@ class Game:
 
         # look for a move
         move = depth = score = None
-        for depth, move, score in search(self.bot, self.pos, print_info=False):
-            if time.time() - start > time_limit:
-                break
-            if depth == depth_limit:
-                break
-            if self.bot.nodes > nodes_limit:
+        for depth, move, score in search(self.bot, self.pos, print_info=True):
+            if time.time() - start > time_limit or depth == depth_limit or self.bot.nodes > nodes_limit:
                 break
 
         actual_time = time.time() - start
@@ -110,16 +105,13 @@ class Game:
         self.pos = make_move(self.pos, move)
         self.moves += " " + get_move_uci(move)
 
-        self.deltas.append(actual_time - time_limit)
-        print("-" * 40)
         print(f"depth: {depth} - time: {round(actual_time, 2)} seconds")
-        print(f"score: {score} - time delta: {round(actual_time - time_limit, 2)}")
-        print(f"nodes: {self.bot.nodes} - n/s: {round(self.bot.nodes / actual_time)}")
-        print(f"deltas means {round(sum(self.deltas) / len(self.deltas), 2)}")
+        # print(f"score: {score} - n/s: {round(self.bot.nodes / actual_time)}")
+        print("-" * 40)
 
     def make_first_move(self):
         move = depth = score = None
-        for depth, move, score in search(self.bot, self.pos, print_info=False):
+        for depth, move, score in search(self.bot, self.pos, print_info=True):
             if depth == 4:
                 break
         client.bots.make_move(self.game_id, get_move_uci(move))
@@ -140,7 +132,6 @@ for event in client.bots.stream_incoming_events():
             client.bots.decline_challenge(challenge['id'])
 
     elif event['type'] == 'gameStart':
-        print("new game")
         game_id = event['game']['id']
         game = Game(client=client, game_id=game_id)
         game.run()

@@ -128,7 +128,7 @@ class Game:
 
 
 print("id name black_numba")
-print("id name Avo-k")
+print("id author Avo-k")
 for event in client.bots.stream_incoming_events():
     if event['type'] == 'challenge':
         challenge = event['challenge']

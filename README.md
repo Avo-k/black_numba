@@ -7,9 +7,9 @@ Numba-enhanced bitboard chess engine in python
 * Bitboards
 
 * Iterative deepening
-  * Negamax serch
-    * Alpha-Beta pruning
-  * Quiescence search (only captures)
+* Negamax serch
+  * Alpha-Beta pruning
+* Quiescence search (only captures)
 
 * Move ordering
   * Most Valuable Victim - Least Valuable Aggressor (MMV LVA)

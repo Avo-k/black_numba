@@ -11,7 +11,7 @@ def main():
     print("uciok")
 
     while True:
-        pass
+        break
 
 
 def parse_move(pos, uci_move: str) -> int:
@@ -33,7 +33,7 @@ def parse_move(pos, uci_move: str) -> int:
 
 
 def parse_position(command):
-    """parse uci 'position' command"""
+    """parse 'position' uci command"""
 
     param = command.split()
     index = command.find('moves')
@@ -58,7 +58,7 @@ def parse_position(command):
 
 
 def parse_go(command, pos):
-    """parse go uci command"""
+    """parse 'go' uci command"""
 
     depth = 4
     _, *params = command.split()

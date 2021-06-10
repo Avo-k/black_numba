@@ -24,13 +24,14 @@ Numba-enhanced bitboard chess engine in python
 [Numba](https://numba.pydata.org/numba-doc/dev/user/5minguide.html) is an open-source JIT compiler that translates a subset of Python and NumPy into fast machine code using LLVM, via the llvmlite Python package.
 Thanks to Numba, my bitboard code runs 165 times faster in perft test.
 
+Perft speed in nodes/second:
+* Python:     7 300 n/s 
+* Numba:  1 200 000 n/s 
+
 
 ## Origins of the name
 
 Black Mambas are a variety of snake 10 times faster than pythons.
-
-current perft speed: 1.2M nodes/second (7300 n/s without numba)
-in-game speed :      150k nodes/second
 
 
 ## Credit

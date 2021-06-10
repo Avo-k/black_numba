@@ -4,7 +4,10 @@
 
 Numba-enhanced bitboard chess engine in python
 
+## Board state
 * Bitboards
+
+## Search
 
 * Iterative deepening
 * Negamax serch
@@ -16,6 +19,13 @@ Numba-enhanced bitboard chess engine in python
   * Principal Variation (PV)
 
 
+## Numba
+
+[Numba](https://numba.pydata.org/numba-doc/dev/user/5minguide.html) is an open-source JIT compiler that translates a subset of Python and NumPy into fast machine code using LLVM, via the llvmlite Python package.
+Thanks to Numba, my bitboard code runs 165 times faster in perft test.
+
+
+## Origins of the name
 
 Black Mambas are a variety of snake 10 times faster than pythons.
 

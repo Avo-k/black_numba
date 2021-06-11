@@ -29,7 +29,7 @@ Perft speed in nodes/second:
 * Numba:  1 200 000 n/s 
 
 
-## Origins of the name
+## Name
 
 Black Mambas are a variety of snake 10 times faster than pythons.
 

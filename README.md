@@ -25,7 +25,7 @@ Numba-enhanced bitboard chess engine in python
 Thanks to Numba, my bitboard code runs 165 times faster in perft test.
 
 Perft speed in nodes/second:
-* Python:     7 300 n/s 
+* Python: _____7 300 n/s 
 * Numba:  1 200 000 n/s 
 
 

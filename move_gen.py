@@ -25,49 +25,49 @@ def encode_move(source, target, piece, side, promote_to, capture, double, enpas,
            double << 21 | enpas << 22 | castling << 23
 
 
-@njit(cache=True)
+@njit(nb.uint8(nb.uint64), cache=True)
 def get_move_source(move):
     return move & 0x3f
 
 
-@njit(cache=True)
+@njit(nb.uint8(nb.uint64), cache=True)
 def get_move_target(move):
     return (move & 0xfc0) >> 6
 
 
-@njit(cache=True)
+@njit(nb.uint8(nb.uint64), cache=True)
 def get_move_piece(move):
     return (move & 0x7000) >> 12
 
 
-@njit(cache=True)
-def get_move_side(move) -> (1, 2):
-    return int(bool(move & 0x8000))
+@njit(nb.uint8(nb.uint64), cache=True)
+def get_move_side(move):
+    return bool(move & 0x8000)
 
 
-@njit(cache=True)
+@njit(nb.uint8(nb.uint64), cache=True)
 def get_move_promote_to(move):
     return (move & 0xf0000) >> 16
 
 
-@njit(cache=True)
+@njit(nb.uint8(nb.uint64), cache=True)
 def get_move_capture(move):
-    return move & 0x100000
+    return bool(move & 0x100000)
 
 
-@njit(cache=True)
+@njit(nb.uint8(nb.uint64), cache=True)
 def get_move_double(move):
-    return move & 0x200000
+    return bool(move & 0x200000)
 
 
-@njit(cache=True)
+@njit(nb.uint8(nb.uint64), cache=True)
 def get_move_enpas(move):
-    return move & 0x400000
+    return bool(move & 0x400000)
 
 
-@njit(cache=True)
+@njit(nb.uint8(nb.uint64), cache=True)
 def get_move_castling(move):
-    return move & 0x800000
+    return bool(move & 0x800000)
 
 
 @njit(cache=True)
@@ -103,10 +103,10 @@ def print_move_list(move_list):
     for move in move_list:
         print(f"  {square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}"
               f"{promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else ''}     "
-              f"{piece_to_ascii[int(bool(get_move_side(move)))][get_move_piece(move)]}         "
-              f"{int(bool(get_move_capture(move)))}         {int(bool(get_move_double(move)))}         "
-              f"{int(bool(get_move_enpas(move)))}         "
-              f"{int(bool(get_move_castling(move)))}")
+              f"{piece_to_letter[get_move_side(move)][get_move_piece(move)]}         "
+              f"{get_move_capture(move)}         {get_move_double(move)}         "
+              f"{get_move_enpas(move)}         "
+              f"{get_move_castling(move)}")
 
     print("Total number of moves:", len(move_list))
 
@@ -310,7 +310,6 @@ def make_move(pos_orig, move, only_captures=0):
     # create a copy of the position
     pos = Position()
     pos.pieces = pos_orig.pieces.copy()
-    pos.occupancy = pos_orig.occupancy.copy()
     pos.side = pos_orig.side
     pos.enpas = pos_orig.enpas
     pos.castle = pos_orig.castle
@@ -375,9 +374,6 @@ def make_move(pos_orig, move, only_captures=0):
         # update castling rights
         pos.castle &= castling_rights[source_square]
         pos.castle &= castling_rights[target_square]
-
-        # clear occupancy
-        pos.occupancy = np.zeros(3, dtype=np.uint64)
 
         # update occupancy
         for color in range(2):

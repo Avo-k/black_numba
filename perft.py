@@ -104,7 +104,6 @@ def fast_iterative_perft(depth_max=5):
             assert r == result
 
 
-
 if __name__ == "__main__":
     # debug_iterative_perft()
-    # fast_iterative_perft()
+    fast_iterative_perft()

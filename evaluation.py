@@ -1,35 +1,10 @@
 from constants import *
 from bb_operations import *
+from position import Position
+from numba import prange
 
-material_score = np.array(((100, 305, 333, 563, 950, 10000),
-                           (-100, -305, -333, -563, -950, -10000)), dtype=np.int64)
-
-
-@njit
-def evaluate(pos) -> int:
-    """return evaluation of a position from white perspective"""
-    score = 0
-
-    for color in range(2):
-        for piece in range(6):
-
-            bb = pos.pieces[color][piece]
-
-            while bb:
-                square = get_ls1b_index(bb)
-                score += material_score[color][piece]
-
-                # pst
-                pst = PST[piece]
-                if color:   # black
-                    score -= pst[mirror_pst[square]]
-                else:   # white
-                    score += pst[square]
-
-                bb = pop_bit(bb, square)
-
-    return -score if pos.side else score
-
+material_score = np.array((( 100,  300,  350,  500,  1000,  10000),
+                           (-100, -300, -350, -500, -1000, -10000)), dtype=np.int64)
 
 pawn_pst = (
     90,  90,  90,  90,  90,  90,  90,  90,
@@ -86,3 +61,30 @@ king_pst = (
 )
 
 PST = np.array((pawn_pst, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst), dtype=np.int64)
+
+
+@njit(nb.int64(Position.class_type.instance_type))
+def evaluate(pos) -> int:
+    """return evaluation of a position from white perspective"""
+    score = 0
+
+    for color in range(2):
+        for piece in range(6):
+
+            bb = pos.pieces[color][piece]
+
+            while bb:
+                square = get_ls1b_index(bb)
+                score += material_score[color][piece]
+
+                # pst
+                pst = PST[piece]
+                if color:   # black
+                    score -= pst[mirror_pst[square]]
+                else:   # white
+                    score += pst[square]
+
+                bb = pop_bit(bb, square)
+
+    # score from white perspective
+    return -score if pos.side else score

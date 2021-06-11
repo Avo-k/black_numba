@@ -1,5 +1,6 @@
 import numpy as np
 import numba as nb
+from numba import njit
 from line_profiler_pycharm import profile
 
 EMPTY = np.uint64(0)
@@ -91,6 +92,9 @@ mvv_lva = np.array(((105, 205, 305, 405, 505, 605),
                     (103, 203, 303, 403, 503, 603),
                     (102, 202, 302, 402, 502, 602),
                     (101, 201, 301, 401, 501, 601),
-                    (100, 200, 300, 400, 500, 600)), dtype=np.uint16)
+                    (100, 200, 300, 400, 500, 600)), dtype=np.uint64)
 
 MAX_PLY = 64
+
+full_depth_moves = 4
+reduction_limit = 3

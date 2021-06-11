@@ -105,8 +105,7 @@ class Game:
         self.pos = make_move(self.pos, move)
         self.moves += " " + get_move_uci(move)
 
-        print(f"depth: {depth} - time: {round(actual_time, 2)} seconds")
-        # print(f"score: {score} - n/s: {round(self.bot.nodes / actual_time)}")
+        print(f"time: {round(actual_time, 2)} - n/s: {round(self.bot.nodes / actual_time)}")
         print("-" * 40)
 
     def make_first_move(self):

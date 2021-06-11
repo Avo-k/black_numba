@@ -4,19 +4,29 @@
 
 Numba-enhanced bitboard chess engine in python
 
-## Board state
-* Bitboards
+## Board state: Bitboards
+
+for each piece (pawn, knight, bishop, rook, queen, king) of each color the squares 
+occupied are 1s in a 64-bit unsigned integer.
 
 ## Search
-
-* Iterative deepening
+### Iterative deepening
 * Negamax serch
   * Alpha-Beta pruning
+  * Principal variation search (PVS)
+  * Late move reduction (LMR)
 * Quiescence search (only captures)
 
-* Move ordering
-  * Most Valuable Victim - Least Valuable Aggressor (MMV LVA)
+### Move ordering
   * Principal Variation (PV)
+  
+  For captures:
+  * Most Valuable Victim - Least Valuable Aggressor (MMV LVA)
+  
+  For quiet moves:
+  * Killer heuristic
+  * History heuristic
+
 
 
 ## Numba

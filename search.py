@@ -46,11 +46,11 @@ def search(bot, pos, print_info=False, depth_max=9):
     bot.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
     bot.pv_length = np.zeros(MAX_PLY, dtype=np.uint8)
     bot.score_pv = False
+    bot.nodes = 0
 
-    for depth in range(1, depth_max+1):
+    for depth in range(1, depth_max + 1):
         bot.follow_pv = True
-        bot.nodes = 0
-        score = negamax(bot, pos, depth, -10 ** 6, 10 ** 6)
+        score = negamax(bot, pos, depth, -50000, 50000)
         if print_info:
             pv_line = [get_move_uci(bot.pv_table[0][c]) for c in range(bot.pv_length[0])]
             print("info score cp", score, "depth", depth, "nodes", bot.nodes, "pv", " ".join(pv_line))
@@ -72,23 +72,25 @@ def quiescence(bot, pos, alpha, beta):
     move_list = [(m, score_move(bot, pos, m)) for m in generate_moves(pos)]
     move_list.sort(reverse=True, key=lambda m: m[1])
 
-    for move in move_list:
-        new_pos = make_move(pos, move[0], only_captures=True)
-        bot.ply += 1
+    for move, _ in move_list:
+        new_pos = make_move(pos, move, only_captures=True)
         if new_pos is None:  # illegal move
-            bot.ply -= 1
             continue
+        bot.ply += 1
         score = -quiescence(bot, new_pos, -beta, -alpha)
         bot.ply -= 1
         if score >= beta:
             return beta
         alpha = max(alpha, score)
+
     return alpha
 
 
 @njit
 def negamax(bot, pos, depth, alpha, beta):
     """return the best move given a position"""
+
+    found_pv = False
 
     bot.pv_length[bot.ply] = bot.ply
 
@@ -104,12 +106,9 @@ def negamax(bot, pos, depth, alpha, beta):
     if in_check:
         depth += 1
 
-
     legal_moves = 0
-    # alphaorig = alpha
 
     move_list = generate_moves(pos)
-
     if bot.follow_pv:
         enable_pv_scoring(bot, move_list)
 
@@ -118,15 +117,50 @@ def negamax(bot, pos, depth, alpha, beta):
     # Move ordering
     move_list.sort(reverse=True, key=lambda m: m[1])
 
+    moves_searched = 0
+
     for move, _ in move_list:
-        bot.ply += 1
+
         new_pos = make_move(pos, move)
         if new_pos is None:  # illegal move
-            bot.ply -= 1
             continue
+
+        bot.ply += 1
         legal_moves += 1
-        score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
+
+        if found_pv:  # gamble that it is the best move
+
+            # try a simplified search with a narrower window
+            score = -negamax(bot, new_pos, depth - 1, -alpha - 1, -alpha)
+
+            if alpha < score < beta:
+                # it failed, do a normal search instead
+                score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
+
+        else:  # for all other moves
+
+            if moves_searched == 0:  # full depth search
+                score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
+
+            else:   # Late Move Reduction (LMR)
+                # check if the position is stable
+                if moves_searched >= full_depth_moves and depth >= reduction_limit and\
+                        not in_check and not get_move_capture(move) and not get_move_promote_to(move):
+                    # search with reduced depth
+                    score = - negamax(bot, new_pos, depth - 2, -alpha - 1, -alpha)
+                else:
+                    score = alpha + 1
+
+                if score > alpha:   # if one of the late moves was actually good
+                    # research with narrow search
+                    score = -negamax(bot, new_pos, depth - 1, -alpha - 1, -alpha)
+
+                    if alpha < score < beta:    # the move was really good
+                        # research with full depth
+                        score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
+
         bot.ply -= 1
+        moves_searched += 1
 
         # fail-hard beta cutoff
         if score >= beta:
@@ -138,12 +172,13 @@ def negamax(bot, pos, depth, alpha, beta):
             return beta
 
         if score > alpha:
+
             if not get_move_capture(move):
                 # store history move
                 bot.history_moves[pos.side][get_move_piece(move)][get_move_target(move)] += depth
 
             alpha = score
-
+            found_pv = True
             bot.pv_table[bot.ply][bot.ply] = move
 
             for next_ply in range(bot.ply + 1, bot.pv_length[bot.ply + 1]):
@@ -153,7 +188,7 @@ def negamax(bot, pos, depth, alpha, beta):
 
     if legal_moves == 0:
         if in_check:  # checkmate
-            return -10 ** 6 + bot.ply
+            return -50000 + bot.ply
         else:  # stalemate
             return 0
 
@@ -167,14 +202,21 @@ def enable_pv_scoring(bot, move_list):
         if bot.pv_table[0][bot.ply] == move:
             bot.score_pv = True
             bot.follow_pv = True
-            break
+
+
+# Move ordering
+# 1. PV move
+# 2. Captures in MVV/LVA
+# 3. 1st and 2nd killer moves
+# 4. History moves
+# 5. Unsorted moves
 
 
 @njit(nb.uint64(Black_numba.class_type.instance_type, Position.class_type.instance_type, nb.uint64), cache=True)
 def score_move(bot, pos, move) -> int:
     """return a score representing the move potential"""
 
-    if bot.score_pv:    # PV move
+    if bot.score_pv:  # PV move
         if bot.pv_table[0][bot.ply] == move:
             bot.score_pv = False
             return 20000
@@ -204,4 +246,4 @@ def print_move_scores(bot, pos):
     decorated_ml.sort(reverse=True, key=lambda m: m[1])
 
     for move in decorated_ml:
-        print("move:", get_move_uci(move[0]),  "score:", move[1])
+        print("move:", get_move_uci(move[0]), "score:", move[1])

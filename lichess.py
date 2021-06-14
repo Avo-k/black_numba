@@ -1,5 +1,6 @@
 import berserk
 import time
+import sys
 
 from position import parse_fen, print_position
 from constants import start_position
@@ -105,11 +106,11 @@ class Game:
         self.pos = make_move(self.pos, move)
         self.moves += " " + get_move_uci(move)
 
-        print(f"time: {round(actual_time, 2)} - n/s: {round(self.bot.nodes / actual_time)}")
+        print(f"time: {round(actual_time, 2)} - kns: {round(self.bot.nodes / actual_time / 1000)}")
         print("-" * 40)
 
     def make_first_move(self):
-        move = depth = score = None
+        move = None
         for depth, move, score in search(self.bot, self.pos, print_info=True):
             if depth == 4:
                 break

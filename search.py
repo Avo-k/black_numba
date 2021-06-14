@@ -108,6 +108,16 @@ def negamax(bot, pos, depth, alpha, beta):
 
     legal_moves = 0
 
+    # Null move pruning
+    if depth >= 3 and not in_check and bot.ply:
+
+        # try not moving
+        null_pos = make_null_move(pos)
+        score = -negamax(bot, null_pos, depth - reduction_limit, -beta, -beta + 1)
+
+        if score >= beta:
+            return beta
+
     move_list = generate_moves(pos)
     if bot.follow_pv:
         enable_pv_scoring(bot, move_list)
@@ -143,7 +153,8 @@ def negamax(bot, pos, depth, alpha, beta):
                 score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
 
             else:   # Late Move Reduction (LMR)
-                # check if the position is stable
+
+                # check if the move is stable
                 if moves_searched >= full_depth_moves and depth >= reduction_limit and\
                         not in_check and not get_move_capture(move) and not get_move_promote_to(move):
                     # search with reduced depth
@@ -204,17 +215,18 @@ def enable_pv_scoring(bot, move_list):
             bot.follow_pv = True
 
 
-# Move ordering
-# 1. PV move
-# 2. Captures in MVV/LVA
-# 3. 1st and 2nd killer moves
-# 4. History moves
-# 5. Unsorted moves
-
-
 @njit(nb.uint64(Black_numba.class_type.instance_type, Position.class_type.instance_type, nb.uint64), cache=True)
 def score_move(bot, pos, move) -> int:
-    """return a score representing the move potential"""
+    """
+    return a score representing the move potential
+
+    ----- Move ordering -----
+    1. PV move
+    2. Captures in MVV/LVA
+    3. 1st and 2nd killer moves
+    4. History moves
+    5. Unsorted moves
+    """
 
     if bot.score_pv:  # PV move
         if bot.pv_table[0][bot.ply] == move:

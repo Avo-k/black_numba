@@ -301,8 +301,9 @@ def generate_legal_moves(pos):
     return [move for move in generate_moves(pos) if make_move(pos, move)]
 
 
+# (Position.class_type.instance_type(Position.class_type.instance_type, nb.uint64, nb.b1))
 @njit
-def make_move(pos_orig, move, only_captures=0):
+def make_move(pos_orig, move, only_captures=False):
     """return new updated position if (move is legal) else None"""
 
     # TODO: integrate the constants to be able to compile AOT
@@ -393,3 +394,17 @@ def make_move(pos_orig, move, only_captures=0):
         return None
 
     return None
+
+
+@njit
+def make_null_move(pos_orig):
+    """return a position with no enpas sq and flipped sides"""
+
+    pos = Position()
+    pos.pieces = pos_orig.pieces.copy()
+    pos.occupancy = pos_orig.occupancy.copy()
+    pos.side = pos_orig.side ^ 1
+    pos.enpas = no_sq
+    pos.castle = pos_orig.castle
+
+    return pos

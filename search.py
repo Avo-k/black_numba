@@ -19,20 +19,23 @@ def random_move(pos) -> int:
     ("pv_table", nb.uint64[:, :]),
     ("pv_length", nb.uint8[:]),
     ("follow_pv", nb.b1),
-    ("score_pv", nb.b1)])
+    ("score_pv", nb.b1),
+    ("hash_table", hash_numba_type[:])])
 class Black_numba:
     def __init__(self):
         self.nodes = 0
         self.ply = 0
-        # killer moves [id][ply]
+        # Killer moves [id][ply]
         self.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
-        # history moves [side][piece][square]
+        # History moves [side][piece][square]
         self.history_moves = np.zeros((2, 6, 64), dtype=np.uint64)
         # Principal Variation (PV)
         self.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
         self.pv_length = np.zeros(MAX_PLY, dtype=np.uint8)
         self.follow_pv = False
         self.score_pv = False
+        # Transposition Table
+        self.hash_table = np.zeros(max_hash_size, dtype=hash_numpy_type)
 
 
 @njit

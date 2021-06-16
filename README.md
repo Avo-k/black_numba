@@ -15,6 +15,8 @@ occupied are 1s in a 64-bit unsigned integer.
   * Alpha-Beta pruning
   * Principal variation search (PVS)
   * Late move reduction (LMR)
+  * Null-move pruning
+  * Aspiration windows
 * Quiescence search (only captures)
 
 ### Move ordering

@@ -7,7 +7,8 @@ position_spec = [
     ('occupancy', nb.uint64[:]),
     ('side', nb.uint8),
     ('enpas', nb.uint8),
-    ('castle', nb.uint8)]
+    ('castle', nb.uint8),
+    ('hash_key', nb.uint64)]
 
 
 @jitclass(position_spec)
@@ -18,6 +19,7 @@ class Position:
         self.side = 0
         self.enpas = no_sq
         self.castle = 0
+        self.hash_key = 0
 
 
 def print_position(pos, print_info=False):
@@ -43,14 +45,43 @@ def print_position(pos, print_info=False):
         r += f" {8 - rank}"
         print(r)
     print(" +---+---+---+---+---+---+---+---+")
-    print("   A   B   C   D   E   F   G   H\n\n")
+    print("   A   B   C   D   E   F   G   H\n")
 
     if print_info:
         print("white" if not pos.side else "black", "to move")
         print("en passant:", square_to_coordinates[pos.enpas])
         casl = f"{'K' if pos.castle & wk else ''}{'Q' if pos.castle & wq else ''}" \
                f"{'k' if pos.castle & bk else ''}{'q' if pos.castle & bq else ''} "
-        print("Castling:", casl if casl else "-", "\n")
+        print("Castling:", casl if casl else "-")
+        print("Hash key:", hex(pos.hash_key), "\n")
+
+
+@njit(nb.uint64(Position.class_type.instance_type))
+def generate_hash_key(pos):
+    """generate a hash_key from a position"""
+
+    final_key = 0
+
+    for color in range(2):
+        for piece in range(6):
+            bb = pos.pieces[color][piece]
+            while bb:
+                square = get_ls1b_index(bb)
+
+                final_key ^= pieces_keys[color][piece][square]
+
+                bb = pop_bit(bb, square)
+
+    # todo: get rid of it by having 65 sq array
+    if pos.enpas != no_sq:
+        final_key ^= en_passant_keys[pos.enpas]
+
+    final_key ^= castle_keys[pos.castle]
+
+    if pos.side:
+        final_key ^= side_key
+
+    return final_key
 
 
 @njit(Position.class_type.instance_type(nb.types.string))
@@ -89,6 +120,7 @@ def parse_fen(fen: str):
         for i, sq in enumerate(squar_to_coordinates):
             if sq == ep:
                 pos.enpas = i
+                break
 
     pos.castle = 0
     for i, c in enumerate("KQkq"):
@@ -117,5 +149,7 @@ def parse_fen(fen: str):
             pos.occupancy[i] |= bb
 
     pos.occupancy[both] = pos.occupancy[white] | pos.occupancy[black]
+
+    pos.hash_key = generate_hash_key(pos)
 
     return pos

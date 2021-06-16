@@ -1,5 +1,5 @@
 from constants import *
-from move_gen import *
+from moves import *
 from bb_operations import get_ls1b_index
 from evaluation import evaluate
 from collections import namedtuple
@@ -9,9 +9,6 @@ def random_move(pos) -> int:
     """return a random legal move"""
     legal_moves = generate_legal_moves(pos)
     return np.random.choice(legal_moves) if legal_moves else None
-
-
-Entry = namedtuple('Entry', 'lower upper')
 
 
 @nb.experimental.jitclass([
@@ -48,9 +45,19 @@ def search(bot, pos, print_info=False, depth_max=9):
     bot.score_pv = False
     bot.nodes = 0
 
+    alpha, beta = -50000, 50000
+
     for depth in range(1, depth_max + 1):
         bot.follow_pv = True
-        score = negamax(bot, pos, depth, -50000, 50000)
+
+        score = negamax(bot, pos, depth, alpha, beta)
+
+        if score <= alpha or score >= beta:
+            alpha, beta = -50000, 50000
+            continue
+
+        alpha, beta = score - 50, score + 50
+
         if print_info:
             pv_line = [get_move_uci(bot.pv_table[0][c]) for c in range(bot.pv_length[0])]
             print("info score cp", score, "depth", depth, "nodes", bot.nodes, "pv", " ".join(pv_line))
@@ -89,8 +96,6 @@ def quiescence(bot, pos, alpha, beta):
 @njit
 def negamax(bot, pos, depth, alpha, beta):
     """return the best move given a position"""
-
-    found_pv = False
 
     bot.pv_length[bot.ply] = bot.ply
 
@@ -138,37 +143,27 @@ def negamax(bot, pos, depth, alpha, beta):
         bot.ply += 1
         legal_moves += 1
 
-        if found_pv:  # gamble that it is the best move
+        if moves_searched == 0:
+            score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
 
-            # try a simplified search with a narrower window
-            score = -negamax(bot, new_pos, depth - 1, -alpha - 1, -alpha)
+        else:  # Late Move Reduction
 
-            if alpha < score < beta:
-                # it failed, do a normal search instead
-                score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
+            # check if the move is stable
+            if moves_searched >= full_depth_moves and depth >= reduction_limit and\
+                    not in_check and not get_move_capture(move) and not get_move_promote_to(move):
+                # search with reduced depth and narrower window
+                score = - negamax(bot, new_pos, depth - 2, -alpha - 1, -alpha)
+            else:
+                score = alpha + 1
 
-        else:  # for all other moves
+            # Principal Variation Search (PVS)
+            if score > alpha:   # if one of the late moves was actually good
+                # research with narrower window
+                score = -negamax(bot, new_pos, depth - 1, -alpha - 1, -alpha)
 
-            if moves_searched == 0:  # full depth search
-                score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
-
-            else:   # Late Move Reduction (LMR)
-
-                # check if the move is stable
-                if moves_searched >= full_depth_moves and depth >= reduction_limit and\
-                        not in_check and not get_move_capture(move) and not get_move_promote_to(move):
-                    # search with reduced depth
-                    score = - negamax(bot, new_pos, depth - 2, -alpha - 1, -alpha)
-                else:
-                    score = alpha + 1
-
-                if score > alpha:   # if one of the late moves was actually good
-                    # research with narrow search
-                    score = -negamax(bot, new_pos, depth - 1, -alpha - 1, -alpha)
-
-                    if alpha < score < beta:    # the move was really good
-                        # research with full depth
-                        score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
+                if alpha < score < beta:    # the move was really good
+                    # research with full depth
+                    score = -negamax(bot, new_pos, depth - 1, -beta, -alpha)
 
         bot.ply -= 1
         moves_searched += 1
@@ -189,7 +184,6 @@ def negamax(bot, pos, depth, alpha, beta):
                 bot.history_moves[pos.side][get_move_piece(move)][get_move_target(move)] += depth
 
             alpha = score
-            found_pv = True
             bot.pv_table[bot.ply][bot.ply] = move
 
             for next_ply in range(bot.ply + 1, bot.pv_length[bot.ply + 1]):

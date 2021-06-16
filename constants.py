@@ -1,7 +1,6 @@
 import numpy as np
 import numba as nb
 from numba import njit
-from line_profiler_pycharm import profile
 
 EMPTY = np.uint64(0)
 BIT = np.uint64(1)
@@ -98,3 +97,12 @@ MAX_PLY = 64
 
 full_depth_moves = 4
 reduction_limit = 3
+
+# np.random.seed(23)
+
+# init random keys
+pieces_keys = np.random.randint(2 ** 64 - 1, size=(2, 6, 64), dtype=np.uint64)
+en_passant_keys = np.random.randint(2 ** 64 - 1, size=64, dtype=np.uint64)
+castle_keys = np.random.randint(2 ** 64 - 1, size=16, dtype=np.uint64)
+side_key = np.random.randint(2 ** 64 - 1, dtype=np.uint64)
+

@@ -87,7 +87,7 @@ class Game:
 
         # Set limits
         time_limit = remaining_time / 60
-        depth_limit = max(3, remaining_time // 6)
+        depth_limit = max(5, remaining_time // 6)
         nodes_limit = time_limit * 100000
 
         # look for a move

@@ -4,7 +4,7 @@ import sys
 
 from constants import *
 from position import parse_fen
-from move_gen import generate_moves, make_move, generate_legal_moves, get_move_uci, get_move_source, get_move_target
+from moves import generate_moves, make_move, generate_legal_moves, get_move_uci
 
 
 positions = nb.typed.Dict.empty(key_type=nb.types.string, value_type=nb.types.uint64[:])
@@ -66,8 +66,8 @@ def debug_iterative_perft(depth_max=3):
             b = chess.Board(fen=pos)
             r = debug_perft(position, depth, b, print_info=False)
             if depth > 2:
-                print("depth     time(s)       n/s")
-                print(f"  {depth}        {round(time.time() - s, 3)}       {round(result / (time.time() - s))}")
+                print("depth     time         kn/s")
+                print(f"  {depth}        {round(time.time() - s, 3)}       {round(result / (time.time() - s) / 1000)}")
             assert r == result
 
 
@@ -99,8 +99,8 @@ def fast_iterative_perft(depth_max=5):
             s = time.time()
             r = compiled_perft(position, depth)
             if depth > 2:
-                print("depth     time(s)       n/s")
-                print(f"  {depth}        {round(time.time() - s, 3)}      {round(result / (time.time() - s))}")
+                print("depth     time         kn/s")
+                print(f"  {depth}        {round(time.time() - s, 3)}      {round(result / (time.time() - s) / 1000)}")
             assert r == result
 
 

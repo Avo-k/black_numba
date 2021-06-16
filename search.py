@@ -35,11 +35,33 @@ class Black_numba:
         self.follow_pv = False
         self.score_pv = False
         # Transposition Table
-        self.hash_table = np.zeros(max_hash_size, dtype=hash_numpy_type)
+        self.hash_table = np.empty(MAX_HASH_SIZE, dtype=hash_numpy_type)
+
+    def read_hash_entry(self, pos, depth, alpha, beta):
+        entry = self.hash_table[pos.hash_key % MAX_HASH_SIZE]
+
+        if entry.key == pos.hash_key:
+            if entry.depth >= depth:
+                if entry.flag == hash_flag_exact:
+                    return entry.score
+                if entry.flag == hash_flag_alpha and entry.score <= alpha:
+                    return alpha
+                if entry.flag == hash_flag_beta and entry.score >= beta:
+                    return beta
+        return no_hash_entry
+
+    def write_hash_entry(self, pos, score, depth, hash_flag):
+
+        i = pos.hash_key % MAX_HASH_SIZE
+
+        self.hash_table[i].key = pos.hash_key
+        self.hash_table[i].depth = depth
+        self.hash_table[i].flag = hash_flag
+        self.hash_table[i].score = score
 
 
 @njit
-def search(bot, pos, print_info=False, depth_max=9):
+def search(bot, pos, print_info=False, depth_max=15):
     """yield depth searched, best move, score (cp)"""
     bot.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
     bot.history_moves = np.zeros((2, 6, 64), dtype=np.uint64)
@@ -98,7 +120,16 @@ def quiescence(bot, pos, alpha, beta):
 
 @njit
 def negamax(bot, pos, depth, alpha, beta):
-    """return the best move given a position"""
+    """return the value of a position given a certain depth
+    using alpha-beta search and optimisations"""
+
+    hash_flag = hash_flag_alpha
+    hash_entry = bot.read_hash_entry(pos, depth, alpha, beta)
+
+    if hash_entry != no_hash_entry:
+        # This position has already been searched
+        # at this depth or higher
+        return hash_entry
 
     bot.pv_length[bot.ply] = bot.ply
 
@@ -173,6 +204,9 @@ def negamax(bot, pos, depth, alpha, beta):
 
         # fail-hard beta cutoff
         if score >= beta:
+
+            bot.write_hash_entry(pos, beta, depth, hash_flag_beta)
+
             # if quiet move
             if not get_move_capture(move):
                 bot.killer_moves[1][bot.ply] = bot.killer_moves[0][bot.ply]
@@ -181,6 +215,8 @@ def negamax(bot, pos, depth, alpha, beta):
             return beta
 
         if score > alpha:
+
+            hash_flag = hash_flag_exact
 
             if not get_move_capture(move):
                 # store history move
@@ -199,6 +235,8 @@ def negamax(bot, pos, depth, alpha, beta):
             return -50000 + bot.ply
         else:  # stalemate
             return 0
+
+    bot.write_hash_entry(pos, alpha, depth, hash_flag)
 
     return alpha
 

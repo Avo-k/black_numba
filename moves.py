@@ -340,8 +340,8 @@ def make_move(pos_orig, move, only_captures=False):
         pos.pieces[side][piece] = set_bit(pos.pieces[side][piece], target_square)
 
         # update hash key
-        pos.hash_key ^= pieces_keys[side][piece][source_square]
-        pos.hash_key ^= pieces_keys[side][piece][target_square]
+        pos.hash_key ^= piece_keys[side][piece][source_square]
+        pos.hash_key ^= piece_keys[side][piece][target_square]
 
         if capture:  # find what we captured and erase it
             for opp_piece in range(6):
@@ -349,24 +349,24 @@ def make_move(pos_orig, move, only_captures=False):
                     # update bitboards
                     pos.pieces[opp][opp_piece] = pop_bit(pos.pieces[opp][opp_piece], target_square)
                     # update hash key
-                    pos.hash_key ^= pieces_keys[opp][opp_piece][target_square]
+                    pos.hash_key ^= piece_keys[opp][opp_piece][target_square]
                     break
 
         if promote_to:  # erase pawn and place promoted piece
             pos.pieces[side][piece] = pop_bit(pos.pieces[side][piece], target_square)
-            pos.hash_key ^= pieces_keys[side][piece][target_square]
+            pos.hash_key ^= piece_keys[side][piece][target_square]
 
             pos.pieces[side][promote_to] = set_bit(pos.pieces[side][promote_to], target_square)
-            pos.hash_key ^= pieces_keys[side][promote_to][target_square]
+            pos.hash_key ^= piece_keys[side][promote_to][target_square]
 
         if enpas:  # erase the opp pawn
             if side:  # black just moved
                 pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square - 8)
-                pos.hash_key ^= pieces_keys[opp][piece][target_square - 8]
+                pos.hash_key ^= piece_keys[opp][piece][target_square - 8]
 
             else:  # white just moved
                 pos.pieces[opp][piece] = pop_bit(pos.pieces[opp][piece], target_square + 8)
-                pos.hash_key ^= pieces_keys[opp][piece][target_square + 8]
+                pos.hash_key ^= piece_keys[opp][piece][target_square + 8]
 
         if pos.enpas != no_sq:
             pos.hash_key ^= en_passant_keys[pos.enpas]
@@ -387,29 +387,29 @@ def make_move(pos_orig, move, only_captures=False):
                 pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], h1)
                 pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], f1)
 
-                pos.hash_key ^= pieces_keys[side][rook][h1]
-                pos.hash_key ^= pieces_keys[side][rook][f1]
+                pos.hash_key ^= piece_keys[side][rook][h1]
+                pos.hash_key ^= piece_keys[side][rook][f1]
 
             elif target_square == c1:
                 pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], a1)
                 pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], d1)
 
-                pos.hash_key ^= pieces_keys[side][rook][a1]
-                pos.hash_key ^= pieces_keys[side][rook][d1]
+                pos.hash_key ^= piece_keys[side][rook][a1]
+                pos.hash_key ^= piece_keys[side][rook][d1]
 
             elif target_square == g8:
                 pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], h8)
                 pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], f8)
 
-                pos.hash_key ^= pieces_keys[side][rook][h8]
-                pos.hash_key ^= pieces_keys[side][rook][f8]
+                pos.hash_key ^= piece_keys[side][rook][h8]
+                pos.hash_key ^= piece_keys[side][rook][f8]
 
             elif target_square == c8:
                 pos.pieces[side][rook] = pop_bit(pos.pieces[side][rook], a8)
                 pos.pieces[side][rook] = set_bit(pos.pieces[side][rook], d8)
 
-                pos.hash_key ^= pieces_keys[side][rook][a8]
-                pos.hash_key ^= pieces_keys[side][rook][d8]
+                pos.hash_key ^= piece_keys[side][rook][a8]
+                pos.hash_key ^= piece_keys[side][rook][d8]
 
         # reset castling hash
         pos.hash_key ^= castle_keys[pos.castle]
@@ -457,14 +457,14 @@ def make_null_move(pos_orig):
     pos = Position()
     pos.pieces = pos_orig.pieces.copy()
     pos.occupancy = pos_orig.occupancy.copy()
-    pos.hash_key = pos_orig.hash_key
     pos.side = pos_orig.side ^ 1
+    pos.enpas = no_sq
     pos.castle = pos_orig.castle
+    pos.hash_key = pos_orig.hash_key
 
     # update hash table
     if pos_orig.enpas != no_sq:
         pos.hash_key ^= en_passant_keys[pos_orig.enpas]
-    pos.enpas = no_sq
     pos.hash_key ^= side_key
 
     return pos

@@ -68,7 +68,7 @@ def generate_hash_key(pos):
             while bb:
                 square = get_ls1b_index(bb)
 
-                final_key ^= pieces_keys[color][piece][square]
+                final_key ^= piece_keys[color][piece][square]
 
                 bb = pop_bit(bb, square)
 

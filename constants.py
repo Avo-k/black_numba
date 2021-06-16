@@ -101,14 +101,15 @@ full_depth_moves = 4
 reduction_limit = 3
 
 # init random hash keys
-pieces_keys = np.random.randint(2 ** 64 - 1, size=(2, 6, 64), dtype=np.uint64)
+piece_keys = np.random.randint(2 ** 64 - 1, size=(2, 6, 64), dtype=np.uint64)
 en_passant_keys = np.random.randint(2 ** 64 - 1, size=64, dtype=np.uint64)
 castle_keys = np.random.randint(2 ** 64 - 1, size=16, dtype=np.uint64)
 side_key = np.random.randint(2 ** 64 - 1, dtype=np.uint64)
 
-max_hash_size = 0x400000
+MAX_HASH_SIZE = 0x400000
 
 hash_flag_exact, hash_flag_alpha, hash_flag_beta = range(3)
+no_hash_entry = 100000
 
-hash_numpy_type = np.dtype([('key', np.uint64), ('depth', np.uint8), ('flag', np.uint8), ('score', np.uint32)])
+hash_numpy_type = np.dtype([('key', np.uint64), ('depth', np.uint8), ('flag', np.uint8), ('score', np.int64)])
 hash_numba_type = nb.from_dtype(hash_numpy_type)

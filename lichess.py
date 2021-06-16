@@ -5,7 +5,7 @@ import sys
 from position import parse_fen, print_position
 from constants import start_position
 from search import Black_numba, search, random_move
-from move_gen import get_move_uci, make_move
+from moves import get_move_uci, make_move
 from uci import parse_move
 
 API_TOKEN = open("api_token.txt").read()
@@ -91,7 +91,7 @@ class Game:
         nodes_limit = time_limit * 100000
 
         # look for a move
-        move = depth = score = None
+        move = None
         for depth, move, score in search(self.bot, self.pos, print_info=True):
             if time.time() - start > time_limit or depth == depth_limit or self.bot.nodes > nodes_limit:
                 break

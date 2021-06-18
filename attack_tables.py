@@ -8,11 +8,11 @@ def mask_pawn_attacks(color, sq):
     bb = set_bit(EMPTY, sq)
 
     if not color:  # WHITE
-        s1 = (bb >> 7) & ~FILES[fileA]
-        s2 = (bb >> 9) & ~FILES[fileH]
+        s1 = (bb >> 7) & ~fileA
+        s2 = (bb >> 9) & ~fileH
     else:  # BLACK
-        s1 = (bb << 7) & ~FILES[fileH]
-        s2 = (bb << 9) & ~FILES[fileA]
+        s1 = (bb << 7) & ~fileH
+        s2 = (bb << 9) & ~fileA
 
     return s1 | s2
 
@@ -22,10 +22,10 @@ def mask_pawn_attacks(color, sq):
 def mask_knight_attacks(sq):
     bb = set_bit(EMPTY, sq)
 
-    m1 = ~(FILES[fileA] | FILES[fileB])
-    m2 = ~FILES[fileA]
-    m3 = ~FILES[fileH]
-    m4 = ~(FILES[fileH] | FILES[fileG])
+    m1 = ~(fileA | fileB)
+    m2 = ~fileA
+    m3 = ~fileH
+    m4 = ~(fileH | fileG)
 
     s1 = (bb & m1) << 6
     s2 = (bb & m2) << 15
@@ -45,8 +45,8 @@ def mask_knight_attacks(sq):
 def mask_king_attacks(sq):
     bb = set_bit(EMPTY, sq)
 
-    m1 = ~FILES[fileA]
-    m2 = ~FILES[fileH]
+    m1 = ~fileA
+    m2 = ~fileH
 
     nw = (bb & m1) << 7
     n = bb << 8
@@ -240,7 +240,7 @@ bishop_masks = np.fromiter((mask_bishop_attacks(sq) for sq in squares), dtype=np
 def init_sliders(attacks, bish):
     """initialize bishop and rook attack tables with their magic numbers"""
 
-    for sq in squares:
+    for sq in range(64):
         attack_mask = bishop_masks[sq] if bish else rook_masks[sq]
 
         relevant_bits_count = count_bits(attack_mask)

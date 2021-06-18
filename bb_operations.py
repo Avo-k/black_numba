@@ -1,6 +1,6 @@
-from constants import BIT
 from numba import njit
 import numba as nb
+import numpy as np
 
 """
 This file contains a variety of functions for manipulating bitboards
@@ -18,20 +18,19 @@ big-endian rank-file mapping:
 
 """
 
-
 @njit(nb.b1(nb.uint64, nb.uint8), cache=True)
 def get_bit(bb, sq):
-    return bb & (BIT << sq)
+    return bb & (1 << sq)
 
 
 @njit(nb.uint64(nb.uint64, nb.uint8), cache=True)
 def set_bit(bb, sq):
-    return bb | (BIT << sq)
+    return bb | (1 << sq)
 
 
 @njit(nb.uint64(nb.uint64, nb.uint8), cache=True)
 def pop_bit(bb, sq):
-    return bb & ~(BIT << sq)
+    return bb & ~(1 << sq)
 
 
 @njit(nb.uint8(nb.uint64), cache=True)
@@ -39,13 +38,13 @@ def count_bits(bb) -> int:
     c = 0
     while bb:
         c += 1
-        bb &= bb - BIT
+        bb &= bb - np.uint64(1)
     return c
 
 
 @njit(nb.uint8(nb.uint64), cache=True)
 def get_ls1b_index(bb) -> int:
-    return count_bits((bb & -bb) - BIT)
+    return count_bits((bb & -bb) - 1)
 
 
 def print_bb(bb):

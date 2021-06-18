@@ -1,6 +1,7 @@
 import numpy as np
 import numba as nb
 from numba import njit
+from bb_operations import print_bb
 
 EMPTY = np.uint64(0)
 BIT = np.uint64(1)
@@ -11,10 +12,14 @@ white, black, both = np.arange(3, dtype=np.uint8)
 pawn, knight, bishop, rook, queen, king = range(6)
 # piece_names = ("pawn", "knight", "bishop", "rook", "queen", "king")
 
-a8, b8, c8, d8, e8, f8, g8, h8, a7, b7, c7, d7, e7, f7, g7, h7, \
-a6, b6, c6, d6, e6, f6, g6, h6, a5, b5, c5, d5, e5, f5, g5, h5, \
-a4, b4, c4, d4, e4, f4, g4, h4, a3, b3, c3, d3, e3, f3, g3, h3, \
-a2, b2, c2, d2, e2, f2, g2, h2, a1, b1, c1, d1, e1, f1, g1, h1, no_sq = range(65)
+a8, b8, c8, d8, e8, f8, g8, h8, \
+a7, b7, c7, d7, e7, f7, g7, h7, \
+a6, b6, c6, d6, e6, f6, g6, h6, \
+a5, b5, c5, d5, e5, f5, g5, h5, \
+a4, b4, c4, d4, e4, f4, g4, h4, \
+a3, b3, c3, d3, e3, f3, g3, h3, \
+a2, b2, c2, d2, e2, f2, g2, h2, \
+a1, b1, c1, d1, e1, f1, g1, h1, no_sq = range(65)
 squares = range(64)
 
 square_to_coordinates = (
@@ -27,23 +32,24 @@ square_to_coordinates = (
     "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "-")
 
-RANKS = np.array(
-    [0x00000000000000FF << 8 * i for i in range(8)],
-    dtype=np.uint64)
+# Rank masks
+rank8, rank7, rank6, rank5, rank4, rank3, rank2, rank1 = \
+    np.array([0x00000000000000FF << 8 * i for i in range(8)],dtype=np.uint64)
 
-FILES = np.array(
-    [0x0101010101010101 << i for i in range(8)],
-    dtype=np.uint64)
+RANKS = np.array((rank8, rank7, rank6, rank5, rank4, rank3, rank2, rank1))
 
-# File
-fileA, fileB, fileC, fileD, fileE, fileF, fileG, fileH = np.arange(8, dtype=np.uint8)
+# File masks
+fileA, fileB, fileC, fileD, fileE, fileF, fileG, fileH = \
+    np.array([0x0101010101010101 << i for i in range(8)], dtype=np.uint64)
+
+FILES = np.array((fileA, fileB, fileC, fileD, fileE, fileF, fileG, fileH))
+
 
 piece_to_letter = (('P', 'N', 'B', 'R', 'Q', 'K'),
                    ('p', 'n', 'b', 'r', 'q', 'k'))
 
 piece_to_ascii = (('♟', '♞', '♝', '♜', '♛', '♚'),
                   ('♙', '♘', '♗', '♖', '♕', '♔'))
-
 
 wk, wq, bk, bq = (2 ** i for i in range(4))
 
@@ -100,3 +106,131 @@ no_hash_entry = 100000
 
 hash_numpy_type = np.dtype([('key', np.uint64), ('depth', np.uint8), ('flag', np.uint8), ('score', np.int64)])
 hash_numba_type = nb.from_dtype(hash_numpy_type)
+
+
+# Evaluation Constants
+
+# Material values
+
+material_score = (100, 300, 350, 500, 1000, 10000)
+
+pawn_pst = (
+    90,  90,  90,  90,  90,  90,  90,  90,
+    30,  30,  30,  40,  40,  30,  30,  30,
+    20,  20,  20,  30,  30,  30,  20,  20,
+    10,  10,  10,  20,  20,  10,  10,  10,
+     5,   5,  10,  20,  20,   5,   5,   5,
+     0,   0,   0,   5,   5,   0,   0,   0,
+     0,   0,   0, -10, -10,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0)
+
+knight_pst = (
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+    -5,   0,   0,  10,  10,   0,   0,  -5,
+    -5,   5,  20,  20,  20,  20,   5,  -5,
+    -5,  10,  20,  30,  30,  20,  10,  -5,
+    -5,  10,  20,  30,  30,  20,  10,  -5,
+    -5,   5,  20,  10,  10,  20,   5,  -5,
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+    -5, -10,   0,   0,   0,   0, -10,  -5
+)
+
+bishop_pst = (
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   0,  10,  10,   0,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,  10,   0,   0,   0,   0,  10,   0,
+     0,  30,   0,   0,   0,   0,  30,   0,
+     0,   0, -10,   0,   0, -10,   0,   0
+)
+
+rook_pst = (
+    50,  50,  50,  50,  50,  50,  50,  50,
+    50,  50,  50,  50,  50,  50,  50,  50,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,  10,  20,  20,  10,   0,   0,
+     0,   0,   0,  20,  20,   0,   0,   0
+)
+
+king_pst = (
+     0,   0,   0,   0,   0,   0,   0,   0,
+     0,   0,   5,   5,   5,   5,   0,   0,
+     0,   5,   5,  10,  10,   5,   5,   0,
+     0,   5,  10,  20,  20,  10,   5,   0,
+     0,   5,  10,  20,  20,  10,   5,   0,
+     0,   0,   5,  10,  10,   5,   0,   0,
+     0,   5,   5,  -5,  -5,   0,   5,   0,
+     0,   0,   5,   0, -15,   0,  10,   0
+)
+
+PST = np.array((pawn_pst, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst), dtype=np.int8)
+
+mirror_pst = (
+    h1, g1, f1, e1, d1, c1, b1, a1,
+    h2, g2, f2, e2, d2, c2, b2, a2,
+    h3, g3, f3, e3, d3, c3, b3, a3,
+    h4, g4, f4, e4, d4, c4, b4, a4,
+    h5, g5, f5, e5, d5, c5, b5, a5,
+    h6, g6, f6, e6, d6, c6, b6, a6,
+    h7, g7, f7, e7, d7, c7, b7, a7,
+    h8, g8, f8, e8, d8, c8, b8, a8)
+
+"""
+    Masks
+
+          Rank mask            File mask           Isolated mask      White Passed pawn mask
+        for square a6        for square f2         for square g2          for square c4
+    8  . . . . . . . .    8  . . . . . 1 . .    8  . . . . . 1 . 1     8  . 1 1 1 . . . .
+    7  . . . . . . . .    7  . . . . . 1 . .    7  . . . . . 1 . 1     7  . 1 1 1 . . . .
+    6  1 1 1 1 1 1 1 1    6  . . . . . 1 . .    6  . . . . . 1 . 1     6  . 1 1 1 . . . .
+    5  . . . . . . . .    5  . . . . . 1 . .    5  . . . . . 1 . 1     5  . 1 1 1 . . . .
+    4  . . . . . . . .    4  . . . . . 1 . .    4  . . . . . 1 . 1     4  . . . . . . . .
+    3  . . . . . . . .    3  . . . . . 1 . .    3  . . . . . 1 . 1     3  . . . . . . . .
+    2  . . . . . . . .    2  . . . . . 1 . .    2  . . . . . 1 . 1     2  . . . . . . . .
+    1  . . . . . . . .    1  . . . . . 1 . .    1  . . . . . 1 . 1     1  . . . . . . . .
+       a b c d e f g h       a b c d e f g h       a b c d e f g h        a b c d e f g h
+"""
+
+file_masks, rank_masks, isolated_masks, white_passed_masks, black_passed_masks = \
+    (np.zeros(64, dtype=np.uint64) for _ in range(5))
+
+pointer = 0
+for i_rank, rank in enumerate(RANKS):
+    for i_file, file in enumerate(FILES):
+        rank_masks[pointer] = rank
+        file_masks[pointer] = file
+
+        if i_file == 0:     # A file
+            isolated_masks[pointer] = fileB
+            white_passed_masks[pointer] = fileA | fileB
+            black_passed_masks[pointer] = fileA | fileB
+
+        elif i_file == 7:   # H file
+            isolated_masks[pointer] = fileG
+            white_passed_masks[pointer] = fileG | fileH
+            black_passed_masks[pointer] = fileG | fileH
+
+        else:
+            isolated_masks[pointer] = FILES[i_file - 1] | FILES[i_file + 1]
+            white_passed_masks[pointer] = FILES[i_file - 1] | file | FILES[i_file + 1]
+            black_passed_masks[pointer] = FILES[i_file - 1] | file | FILES[i_file + 1]
+
+        for r in RANKS[:i_rank + 1]:
+            black_passed_masks[pointer] &= ~r
+        for r in RANKS[i_rank:]:
+            white_passed_masks[pointer] &= ~r
+
+        pointer += 1
+del pointer
+
+double_pawn_penalty = -20
+isolated_pawn_penalty = -10
+passed_pawn_bonus = (200, 150, 100, 75, 50, 30, 10, 0)
+
+semi_open_file_bonus = 10
+open_file_bonus = 15

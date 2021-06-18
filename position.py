@@ -117,22 +117,21 @@ def parse_fen(fen: str):
         if c in castle:
             pos.castle += (2 ** i)
 
-    squares = np.arange(64, dtype=np.uint8)
-    sq_i = 0
+    sq = 0
 
     for c in board:
         if c.isupper():  # White
             piece = let_str_to_int[c]
-            pos.pieces[white][piece] = set_bit(pos.pieces[white][piece], squares[sq_i])
-            sq_i += 1
+            pos.pieces[white][piece] = set_bit(pos.pieces[white][piece], sq)
+            sq += 1
 
         elif c.islower():  # Black
             piece = let_str_to_int[c]
-            pos.pieces[black][piece] = set_bit(pos.pieces[black][piece], squares[sq_i])
-            sq_i += 1
+            pos.pieces[black][piece] = set_bit(pos.pieces[black][piece], sq)
+            sq += 1
 
         elif c.isnumeric():  # Empty
-            sq_i += num_str_to_int[c]
+            sq += num_str_to_int[c]
 
     for i in range(2):
         for bb in pos.pieces[i]:

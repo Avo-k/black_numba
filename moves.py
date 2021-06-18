@@ -52,46 +52,36 @@ def get_move_promote_to(move):
     return (move & 0xf0000) >> 16
 
 
-@njit(nb.uint8(nb.uint64), cache=True)
+@njit(nb.b1(nb.uint64), cache=True)
 def get_move_capture(move):
     return bool(move & 0x100000)
 
 
-@njit(nb.uint8(nb.uint64), cache=True)
+@njit(nb.b1(nb.uint64), cache=True)
 def get_move_double(move):
     return bool(move & 0x200000)
 
 
-@njit(nb.uint8(nb.uint64), cache=True)
+@njit(nb.b1(nb.uint64), cache=True)
 def get_move_enpas(move):
     return bool(move & 0x400000)
 
 
-@njit(nb.uint8(nb.uint64), cache=True)
+@njit(nb.b1(nb.uint64), cache=True)
 def get_move_castling(move):
     return bool(move & 0x800000)
 
 
 @njit(cache=True)
 def get_move_uci(move):
-    square_to_coordinates = [
-        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "-"]
-    promo_piece_to_str = ['p', 'n', 'b', 'r', 'q', 'k']
     return str(square_to_coordinates[get_move_source(move)]) + str(square_to_coordinates[get_move_target(move)]) + \
-           (promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else '')
+           (piece_to_letter[black][get_move_promote_to(move)] if get_move_promote_to(move) else '')
 
 
 def print_move(move):
     """print a move in UCI format"""
     print(f"{square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}"
-          f"{promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else ''}")
+          f"{piece_to_letter[black][get_move_promote_to(move)] if get_move_promote_to(move) else ''}")
 
 
 def print_move_list(move_list):
@@ -104,7 +94,7 @@ def print_move_list(move_list):
 
     for move in move_list:
         print(f"  {square_to_coordinates[get_move_source(move)]}{square_to_coordinates[get_move_target(move)]}"
-              f"{promo_piece_to_str[get_move_promote_to(move)] if get_move_promote_to(move) else ''}     "
+              f"{piece_to_letter[black][get_move_promote_to(move)] if get_move_promote_to(move) else ''}     "
               f"{piece_to_letter[get_move_side(move)][get_move_piece(move)]}         "
               f"{get_move_capture(move)}         {get_move_double(move)}         "
               f"{get_move_enpas(move)}         "
@@ -457,9 +447,10 @@ def make_null_move(pos_orig):
     pos = Position()
     pos.pieces = pos_orig.pieces.copy()
     pos.occupancy = pos_orig.occupancy.copy()
+    pos.castle = pos_orig.castle
+
     pos.side = pos_orig.side ^ 1
     pos.enpas = no_sq
-    pos.castle = pos_orig.castle
     pos.hash_key = pos_orig.hash_key
 
     # update hash table

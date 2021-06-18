@@ -6,20 +6,18 @@ EMPTY = np.uint64(0)
 BIT = np.uint64(1)
 UNIVERSE = np.uint64(0xffffffffffffffff)
 
-white, black, both = range(3)
-pc_white, pc_black = False, True
+white, black, both = np.arange(3, dtype=np.uint8)
 
 pawn, knight, bishop, rook, queen, king = range(6)
-pc_pawn, pc_knight, pc_bishop, pc_rook, pc_queen, pc_king = np.arange(1, 7)
-piece_names = ["pawn", "knight", "bishop", "rook", "queen", "king"]
+# piece_names = ("pawn", "knight", "bishop", "rook", "queen", "king")
 
 a8, b8, c8, d8, e8, f8, g8, h8, a7, b7, c7, d7, e7, f7, g7, h7, \
 a6, b6, c6, d6, e6, f6, g6, h6, a5, b5, c5, d5, e5, f5, g5, h5, \
 a4, b4, c4, d4, e4, f4, g4, h4, a3, b3, c3, d3, e3, f3, g3, h3, \
-a2, b2, c2, d2, e2, f2, g2, h2, a1, b1, c1, d1, e1, f1, g1, h1, no_sq = np.arange(65, dtype=np.uint8)
-squares = np.arange(64, dtype=np.uint8)
+a2, b2, c2, d2, e2, f2, g2, h2, a1, b1, c1, d1, e1, f1, g1, h1, no_sq = range(65)
+squares = range(64)
 
-square_to_coordinates = [
+square_to_coordinates = (
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
     "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
     "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
@@ -27,17 +25,7 @@ square_to_coordinates = [
     "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
     "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
     "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "-"]
-
-mirror_pst = (
-    a1, b1, c1, d1, e1, f1, g1, h1,
-    a2, b2, c2, d2, e2, f2, g2, h2,
-    a3, b3, c3, d3, e3, f3, g3, h3,
-    a4, b4, c4, d4, e4, f4, g4, h4,
-    a5, b5, c5, d5, e5, f5, g5, h5,
-    a6, b6, c6, d6, e6, f6, g6, h6,
-    a7, b7, c7, d7, e7, f7, g7, h7,
-    a8, b8, c8, d8, e8, f8, g8, h8)
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "-")
 
 RANKS = np.array(
     [0x00000000000000FF << 8 * i for i in range(8)],
@@ -50,21 +38,14 @@ FILES = np.array(
 # File
 fileA, fileB, fileC, fileD, fileE, fileF, fileG, fileH = np.arange(8, dtype=np.uint8)
 
-piece_to_letter = [{0: 'P', 1: 'N', 2: 'B', 3: 'R', 4: 'Q', 5: 'K'},
-                   {0: 'p', 1: 'n', 2: 'b', 3: 'r', 4: 'q', 5: 'k'}]
+piece_to_letter = (('P', 'N', 'B', 'R', 'Q', 'K'),
+                   ('p', 'n', 'b', 'r', 'q', 'k'))
 
-letter_to_piece = [{'P': 0, 'N': 1, 'B': 2, 'R': 3, 'Q': 4, 'K': 5},
-                   {'p': 0, 'n': 1, 'b': 2, 'r': 3, 'q': 4, 'k': 5}]
-
-piece_to_ascii = [{0: '♟', 1: '♞', 2: '♝', 3: '♜', 4: '♛', 5: '♚'},
-                  {0: '♙', 1: '♘', 2: '♗', 3: '♖', 4: '♕', 5: '♔'}]
-
-promo_piece_to_str_ = {4: 'q', 3: 'r', 2: 'b', 1: 'n'}
-promo_piece_to_str = ['p', 'n', 'b', 'r', 'q', 'k']
-# promo_str_to_piece = {v: k for k, v in promo_piece_to_str.items()}
+piece_to_ascii = (('♟', '♞', '♝', '♜', '♛', '♚'),
+                  ('♙', '♘', '♗', '♖', '♕', '♔'))
 
 
-wk, wq, bk, bq = (np.uint8(2 ** i) for i in range(4))
+wk, wq, bk, bq = (2 ** i for i in range(4))
 
 castling_rights = np.array(
     (7, 15, 15, 15, 3, 15, 15, 11,
@@ -82,6 +63,12 @@ start_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 tricky_position = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
 killer_position = "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
 cmk_position = "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9"
+repetitions_position = "2r3k1/R7/8/1R6/8/8/P4KPP/8 w - - 0 40"
+mate_in_2 = "k7/6R1/2K5/8/8/8/8/8 w - - 16 9"
+mate_in_4 = "2k5/5R2/3K4/8/8/8/8/8 w - - 12 7"
+
+# Mating bounds for mating scores
+BOUND_INF, UPPER_MATE, LOWER_MATE = 50000, 49000, 48000
 
 # Capture ordering
 # most valuable victim & less valuable attacker
@@ -91,7 +78,7 @@ mvv_lva = np.array(((105, 205, 305, 405, 505, 605),
                     (103, 203, 303, 403, 503, 603),
                     (102, 202, 302, 402, 502, 602),
                     (101, 201, 301, 401, 501, 601),
-                    (100, 200, 300, 400, 500, 600)), dtype=np.uint64)
+                    (100, 200, 300, 400, 500, 600)), dtype=np.uint8)
 
 # PV
 MAX_PLY = 64

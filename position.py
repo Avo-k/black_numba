@@ -15,7 +15,7 @@ position_spec = [
 class Position:
     def __init__(self):
         self.pieces = np.zeros((2, 6), dtype=np.uint64)  # bb for each color (2) and each piece type (6)
-        self.occupancy = np.zeros(3, dtype=np.uint64)  # Combined bitboards for [white, black, both]
+        self.occupancy = np.zeros(3, dtype=np.uint64)  # Combined bitboards for (white, black, both)
         self.side = 0
         self.enpas = no_sq
         self.castle = 0
@@ -100,16 +100,6 @@ def parse_fen(fen: str):
         for code, letter in enumerate(side):
             let_str_to_int[letter] = code
 
-    squar_to_coordinates = [
-        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "-"]
-
     board, color, castle, ep, _hclock, _fclock = fen.split()
 
     pos.side = 0 if color == "w" else 1
@@ -117,7 +107,7 @@ def parse_fen(fen: str):
     if ep == "-":
         pos.enpas = no_sq
     else:
-        for i, sq in enumerate(squar_to_coordinates):
+        for i, sq in enumerate(square_to_coordinates):
             if sq == ep:
                 pos.enpas = i
                 break

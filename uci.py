@@ -1,6 +1,6 @@
 from position import parse_fen
 from constants import start_position
-from move_gen import generate_moves, get_move_source, get_move_target, get_move_promote_to, make_move
+from moves import generate_moves, get_move_source, get_move_target, get_move_promote_to, make_move
 from search import random_move
 
 

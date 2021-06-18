@@ -99,8 +99,8 @@ def fast_iterative_perft(depth_max=5):
             s = time.time()
             r = compiled_perft(position, depth)
             if depth > 2:
-                print("depth     time         kn/s")
-                print(f"  {depth}        {round(time.time() - s, 3)}      {round(result / (time.time() - s) / 1000)}")
+                print("depth     time         Mn/s")
+                print(f"  {depth}        {round(time.time() - s, 3)}      {round(result / (time.time() - s) / 10**6, 2)}")
             assert r == result
 
 

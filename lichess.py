@@ -87,13 +87,12 @@ class Game:
 
         # Set limits
         time_limit = remaining_time / 60
-        depth_limit = max(5, remaining_time // 6)
         nodes_limit = time_limit * 100000
 
         # look for a move
         move = None
         for depth, move, score in search(self.bot, self.pos, print_info=True):
-            if time.time() - start > time_limit or depth == depth_limit or self.bot.nodes > nodes_limit:
+            if time.time() - start > time_limit or self.bot.nodes > nodes_limit:
                 break
 
         actual_time = time.time() - start
@@ -112,7 +111,7 @@ class Game:
     def make_first_move(self):
         move = None
         for depth, move, score in search(self.bot, self.pos, print_info=True):
-            if depth == 4:
+            if depth == 10:
                 break
         client.bots.make_move(self.game_id, get_move_uci(move))
         self.pos = make_move(self.pos, move)
@@ -135,6 +134,7 @@ for event in client.bots.stream_incoming_events():
         game_id = event['game']['id']
         game = Game(client=client, game_id=game_id)
         game.run()
+        del game
 
     else:  # challengeDeclined, gameFinish, challengeCanceled
         if event['type'] not in ('challengeDeclined', 'gameFinish', 'challengeCanceled'):

@@ -314,7 +314,7 @@ def get_attacks(piece, source, pos):
 
 @njit
 def is_square_attacked(pos, sq, side):
-    """is side attacking sq"""
+    """return True if the square is attacked by the given color else False"""
     opp = side ^ 1
     if pawn_attacks[opp][sq] & pos.pieces[side][pawn] \
             or knight_attacks[sq] & pos.pieces[side][knight] \

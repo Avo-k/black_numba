@@ -20,7 +20,6 @@ def evaluate(pos) -> int:
             pst = PST[piece]
 
             while bb:
-
                 sq = get_ls1b_index(bb)
 
                 if color:  # black

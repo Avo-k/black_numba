@@ -86,7 +86,7 @@ def compiled_perft(board, depth):
     return count
 
 
-def fast_iterative_perft(depth_max=4):
+def fast_iterative_perft(depth_max=5):
     for i, (pos, t) in enumerate(positions.items(), 1):
         print("-" * 30)
         print(" " * 8, "POSITION", i)

@@ -8,8 +8,28 @@ Play black_numba on lichess.org: https://lichess.org/@/black_numba
 
 ## Board state: Bitboards
 
-for each piece (pawn, knight, bishop, rook, queen, king) of each color the squares 
-occupied are 1s in a 64-bit unsigned integer.
+A bitboard is a way to represent a chess board, with a 64-bit unsigned integer representing
+occupied squares with 1 and empty squares with 0.
+
+A position object store 12 bitboards for each chess piece (pawn, knight, bishop, rook, queen, king) of each color
+for example, the white pawn bitboard at the beginning of a game will be:
+
+* in decimal: 71776119061217280
+* in binary : 0b11111111000000000000000000000000000000000000000000000000
+
+and in a clearer form:
+'''
+8  ·  ·  ·  ·  ·  ·  ·  · 
+7  ·  ·  ·  ·  ·  ·  ·  · 
+6  ·  ·  ·  ·  ·  ·  ·  · 
+5  ·  ·  ·  ·  ·  ·  ·  · 
+4  ·  ·  ·  ·  ·  ·  ·  · 
+3  ·  ·  ·  ·  ·  ·  ·  · 
+2  1  1  1  1  1  1  1  1 
+1  ·  ·  ·  ·  ·  ·  ·  · 
+   A  B  C  D  E  F  G  H
+'''
+
 
 ## Search
 ### Iterative deepening

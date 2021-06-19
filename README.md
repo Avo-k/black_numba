@@ -93,7 +93,7 @@ Perft speed in nodes/second:
 Black Mambas are a variety of snake 10 times faster than pythons.
 
 
-## Credit
+## Credits
 [Bitboard CHESS ENGINE in C on youtube](https://youtube.com/playlist?list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs)
 
 [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page)

@@ -60,6 +60,8 @@ and in a clearer form:
 * Piece-square tables
 * Double, isolated and passed pawns
 * Open and semi-open files for rooks and kings
+* shield pawn for king
+* bishop and queen basic mobility
 
 
 ## Numba

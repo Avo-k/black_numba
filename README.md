@@ -18,17 +18,17 @@ for example, the white pawn bitboard at the beginning of a game will be:
 * in binary : 0b11111111000000000000000000000000000000000000000000000000
 
 and in a clearer form:
-'''
-8  ·  ·  ·  ·  ·  ·  ·  · 
-7  ·  ·  ·  ·  ·  ·  ·  · 
-6  ·  ·  ·  ·  ·  ·  ·  · 
-5  ·  ·  ·  ·  ·  ·  ·  · 
+
+```8  ·  ·  ·  ·  ·  ·  ·  ·
+7  ·  ·  ·  ·  ·  ·  ·  ·
+6  ·  ·  ·  ·  ·  ·  ·  ·
+5  ·  ·  ·  ·  ·  ·  ·  ·
 4  ·  ·  ·  ·  ·  ·  ·  · 
 3  ·  ·  ·  ·  ·  ·  ·  · 
 2  1  1  1  1  1  1  1  1 
 1  ·  ·  ·  ·  ·  ·  ·  · 
    A  B  C  D  E  F  G  H
-'''
+   ```
 
 
 ## Search

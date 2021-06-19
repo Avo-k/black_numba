@@ -1,7 +1,7 @@
 from constants import *
 from bb_operations import *
 from position import Position
-from attack_tables import get_bishop_attacks, get_queen_attacks, king_attacks
+from attack_tables import get_bishop_attacks, get_queen_attacks, king_attacks, knight_attacks
 
 
 @njit(nb.int64(Position.class_type.instance_type))
@@ -38,6 +38,10 @@ def evaluate(pos) -> int:
                         # Passed pawn
                         if not black_passed_masks[sq] & pos.pieces[color ^ 1][piece]:
                             score -= passed_pawn_bonus[mirror_pst[sq] // 8]
+
+                    elif piece == knight:
+                        moves = count_bits(knight_attacks[sq] & ~pos.occupancy[color])
+                        score -= (moves - 4) * 4
 
                     elif piece == bishop:
                         # Mobility
@@ -82,6 +86,10 @@ def evaluate(pos) -> int:
                         # Passed pawn
                         if not white_passed_masks[sq] & pos.pieces[color ^ 1][piece]:
                             score += passed_pawn_bonus[sq // 8]
+
+                    elif piece == knight:
+                        moves = count_bits(knight_attacks[sq] & ~pos.occupancy[color])
+                        score += (moves - 4) * 4
 
                     elif piece == bishop:
                         # Mobility

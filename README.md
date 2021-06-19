@@ -4,6 +4,8 @@
 
 Numba-enhanced bitboard chess engine in python
 
+Play black_numba on lichess.org: https://lichess.org/@/black_numba
+
 ## Board state: Bitboards
 
 for each piece (pawn, knight, bishop, rook, queen, king) of each color the squares 

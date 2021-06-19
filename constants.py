@@ -34,7 +34,7 @@ square_to_coordinates = (
 
 # Rank masks
 rank8, rank7, rank6, rank5, rank4, rank3, rank2, rank1 = \
-    np.array([0x00000000000000FF << 8 * i for i in range(8)],dtype=np.uint64)
+    np.array([0x00000000000000FF << 8 * i for i in range(8)], dtype=np.uint64)
 
 RANKS = np.array((rank8, rank7, rank6, rank5, rank4, rank3, rank2, rank1))
 
@@ -43,7 +43,6 @@ fileA, fileB, fileC, fileD, fileE, fileF, fileG, fileH = \
     np.array([0x0101010101010101 << i for i in range(8)], dtype=np.uint64)
 
 FILES = np.array((fileA, fileB, fileC, fileD, fileE, fileF, fileG, fileH))
-
 
 piece_to_letter = (('P', 'N', 'B', 'R', 'Q', 'K'),
                    ('p', 'n', 'b', 'r', 'q', 'k'))
@@ -93,6 +92,8 @@ MAX_PLY = 64
 full_depth_moves = 4
 reduction_limit = 3
 
+# Hash Constants
+
 # init random hash keys
 piece_keys = np.random.randint(2 ** 64 - 1, size=(2, 6, 64), dtype=np.uint64)
 en_passant_keys = np.random.randint(2 ** 64 - 1, size=64, dtype=np.uint64)
@@ -107,78 +108,77 @@ no_hash_entry = 100000
 hash_numpy_type = np.dtype([('key', np.uint64), ('depth', np.uint8), ('flag', np.uint8), ('score', np.int64)])
 hash_numba_type = nb.from_dtype(hash_numpy_type)
 
-
 # Evaluation Constants
 
 # Material values
 
-material_score = (100, 300, 350, 500, 1000, 10000)
+material_score = (100, 320, 330, 500, 950, 10000)
 
 pawn_pst = (
-    90,  90,  90,  90,  90,  90,  90,  90,
-    30,  30,  30,  40,  40,  30,  30,  30,
-    20,  20,  20,  30,  30,  30,  20,  20,
-    10,  10,  10,  20,  20,  10,  10,  10,
-     5,   5,  10,  20,  20,   5,   5,   5,
-     0,   0,   0,   5,   5,   0,   0,   0,
-     0,   0,   0, -10, -10,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0)
+    0, 0, 0, 0, 0, 0, 0, 0,
+    50, 50, 50, 50, 50, 50, 50, 50,
+    10, 10, 20, 30, 30, 20, 10, 10,
+    5, 5, 10, 25, 25, 10, 5, 5,
+    0, 0, 0, 20, 20, 0, 0, 0,
+    5, -5, -10, 0, 0, -10, -5, 5,
+    5, 10, 10, -20, -20, 10, 10, 5,
+    0, 0, 0, 0, 0, 0, 0, 0)
 
 knight_pst = (
-    -5,   0,   0,   0,   0,   0,   0,  -5,
-    -5,   0,   0,  10,  10,   0,   0,  -5,
-    -5,   5,  20,  20,  20,  20,   5,  -5,
-    -5,  10,  20,  30,  30,  20,  10,  -5,
-    -5,  10,  20,  30,  30,  20,  10,  -5,
-    -5,   5,  20,  10,  10,  20,   5,  -5,
-    -5,   0,   0,   0,   0,   0,   0,  -5,
-    -5, -10,   0,   0,   0,   0, -10,  -5
+    -50, -40, -30, -30, -30, -30, -40, -50,
+    -40, -20, 0, 0, 0, 0, -20, -40,
+    -30, 0, 10, 15, 15, 10, 0, -30,
+    -30, 5, 15, 20, 20, 15, 5, -30,
+    -30, 0, 15, 20, 20, 15, 0, -30,
+    -30, 5, 10, 15, 15, 10, 5, -30,
+    -40, -20, 0, 5, 5, 0, -20, -40,
+    -50, -40, -30, -30, -30, -30, -40, -50
 )
 
 bishop_pst = (
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   0,  10,  10,   0,   0,   0,
-     0,   0,  10,  20,  20,  10,   0,   0,
-     0,   0,  10,  20,  20,  10,   0,   0,
-     0,  10,   0,   0,   0,   0,  10,   0,
-     0,  30,   0,   0,   0,   0,  30,   0,
-     0,   0, -10,   0,   0, -10,   0,   0
+    -20, -10, -10, -10, -10, -10, -10, -20,
+    -10, 0, 0, 0, 0, 0, 0, -10,
+    -10, 0, 5, 10, 10, 5, 0, -10,
+    -10, 5, 5, 10, 10, 5, 5, -10,
+    -10, 0, 10, 10, 10, 10, 0, -10,
+    -10, 10, 10, 10, 10, 10, 10, -10,
+    -10, 5, 0, 0, 0, 0, 5, -10,
+    -20, -10, -10, -10, -10, -10, -10, -20
 )
 
 rook_pst = (
-    50,  50,  50,  50,  50,  50,  50,  50,
-    50,  50,  50,  50,  50,  50,  50,  50,
-     0,   0,  10,  20,  20,  10,   0,   0,
-     0,   0,  10,  20,  20,  10,   0,   0,
-     0,   0,  10,  20,  20,  10,   0,   0,
-     0,   0,  10,  20,  20,  10,   0,   0,
-     0,   0,  10,  20,  20,  10,   0,   0,
-     0,   0,   0,  20,  20,   0,   0,   0
+    0, 0, 0, 0, 0, 0, 0, 0,
+    5, 10, 10, 10, 10, 10, 10, 5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    -5, 0, 0, 0, 0, 0, 0, -5,
+    0, 0, 0, 5, 5, 0, 0, 0
 )
 
 king_pst = (
-     0,   0,   0,   0,   0,   0,   0,   0,
-     0,   0,   5,   5,   5,   5,   0,   0,
-     0,   5,   5,  10,  10,   5,   5,   0,
-     0,   5,  10,  20,  20,  10,   5,   0,
-     0,   5,  10,  20,  20,  10,   5,   0,
-     0,   0,   5,  10,  10,   5,   0,   0,
-     0,   5,   5,  -5,  -5,   0,   5,   0,
-     0,   0,   5,   0, -15,   0,  10,   0
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 5, 5, 5, 5, 0, 0,
+    0, 5, 5, 10, 10, 5, 5, 0,
+    0, 5, 10, 20, 20, 10, 5, 0,
+    0, 5, 10, 20, 20, 10, 5, 0,
+    0, 0, 5, 10, 10, 5, 0, 0,
+    0, 5, 5, -5, -5, 0, 5, 0,
+    0, 0, 5, 0, -15, 0, 10, 0
 )
 
 PST = np.array((pawn_pst, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst), dtype=np.int8)
 
 mirror_pst = (
-    h1, g1, f1, e1, d1, c1, b1, a1,
-    h2, g2, f2, e2, d2, c2, b2, a2,
-    h3, g3, f3, e3, d3, c3, b3, a3,
-    h4, g4, f4, e4, d4, c4, b4, a4,
-    h5, g5, f5, e5, d5, c5, b5, a5,
-    h6, g6, f6, e6, d6, c6, b6, a6,
-    h7, g7, f7, e7, d7, c7, b7, a7,
-    h8, g8, f8, e8, d8, c8, b8, a8)
+    a1, b1, c1, d1, e1, f1, g1, h1,
+    a2, b2, c2, d2, e2, f2, g2, h2,
+    a3, b3, c3, d3, e3, f3, g3, h3,
+    a4, b4, c4, d4, e4, f4, g4, h4,
+    a5, b5, c5, d5, e5, f5, g5, h5,
+    a6, b6, c6, d6, e6, f6, g6, h6,
+    a7, b7, c7, d7, e7, f7, g7, h7,
+    a8, b8, c8, d8, e8, f8, g8, h8)
 
 """
     Masks
@@ -205,12 +205,12 @@ for i_rank, rank in enumerate(RANKS):
         rank_masks[pointer] = rank
         file_masks[pointer] = file
 
-        if i_file == 0:     # A file
+        if i_file == 0:  # A file
             isolated_masks[pointer] = fileB
             white_passed_masks[pointer] = fileA | fileB
             black_passed_masks[pointer] = fileA | fileB
 
-        elif i_file == 7:   # H file
+        elif i_file == 7:  # H file
             isolated_masks[pointer] = fileG
             white_passed_masks[pointer] = fileG | fileH
             black_passed_masks[pointer] = fileG | fileH
@@ -234,3 +234,5 @@ passed_pawn_bonus = (200, 150, 100, 75, 50, 30, 10, 0)
 
 semi_open_file_bonus = 10
 open_file_bonus = 15
+
+king_shield_bonus = 5

@@ -1,6 +1,7 @@
 from constants import *
 from bb_operations import *
 from position import Position
+from attack_tables import get_bishop_attacks, get_queen_attacks, king_attacks
 
 
 @njit(nb.int64(Position.class_type.instance_type))
@@ -38,7 +39,12 @@ def evaluate(pos) -> int:
                         if not black_passed_masks[sq] & pos.pieces[color ^ 1][piece]:
                             score -= passed_pawn_bonus[mirror_pst[sq] // 8]
 
-                    if piece == rook:
+                    elif piece == bishop:
+                        # Mobility
+                        moves = count_bits(get_bishop_attacks(sq, pos.occupancy[both]))
+                        score -= (moves - 6) * 5
+
+                    elif piece == rook:
                         # Semi-open file
                         if not pos.pieces[color][pawn] & file_masks[sq]:
                             score -= semi_open_file_bonus
@@ -46,13 +52,20 @@ def evaluate(pos) -> int:
                             if not (pos.pieces[color][pawn] | pos.pieces[color ^ 1][pawn]) & file_masks[sq]:
                                 score -= open_file_bonus
 
-                    if piece == king:
+                    elif piece == queen:
+                        # Mobility
+                        moves = count_bits(get_queen_attacks(sq, pos.occupancy[both]))
+                        score -= (moves - 10) * 3
+
+                    elif piece == king:
                         # Semi-open file
                         if not pos.pieces[color][pawn] & file_masks[sq]:
                             score += semi_open_file_bonus
                             # Open file
                             if not (pos.pieces[color][pawn] | pos.pieces[color ^ 1][pawn]) & file_masks[sq]:
                                 score += open_file_bonus
+                        # King safety
+                        score -= count_bits(king_attacks[sq] & pos.occupancy[color]) * king_shield_bonus
 
                 else:  # white
 
@@ -70,7 +83,12 @@ def evaluate(pos) -> int:
                         if not white_passed_masks[sq] & pos.pieces[color ^ 1][piece]:
                             score += passed_pawn_bonus[sq // 8]
 
-                    if piece == rook:
+                    elif piece == bishop:
+                        # Mobility
+                        moves = count_bits(get_bishop_attacks(sq, pos.occupancy[both]))
+                        score += (moves - 6) * 5
+
+                    elif piece == rook:
                         # Semi-open file
                         if not pos.pieces[color][pawn] & file_masks[sq]:
                             score += semi_open_file_bonus
@@ -78,13 +96,20 @@ def evaluate(pos) -> int:
                             if not (pos.pieces[color][pawn] | pos.pieces[color ^ 1][pawn]) & file_masks[sq]:
                                 score += open_file_bonus
 
-                    if piece == king:
+                    elif piece == queen:
+                        # Mobility
+                        moves = count_bits(get_queen_attacks(sq, pos.occupancy[both]))
+                        score += (moves - 10) * 3
+
+                    elif piece == king:
                         # Semi-open file
                         if not pos.pieces[color][pawn] & file_masks[sq]:
                             score -= semi_open_file_bonus
                             # Open file
                             if not (pos.pieces[color][pawn] | pos.pieces[color ^ 1][pawn]) & file_masks[sq]:
                                 score -= open_file_bonus
+                        # King safety
+                        score += count_bits(king_attacks[sq] & pos.occupancy[color]) * king_shield_bonus
 
                 bb = pop_bit(bb, sq)
 

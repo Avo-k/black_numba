@@ -12,7 +12,7 @@ def random_move(pos) -> int:
 
 @nb.experimental.jitclass([
     ("nodes", nb.uint64),
-    ("ply", nb.uint64),
+    ("ply", nb.uint32),
     ("killer_moves", nb.uint64[:, :]),
     ("history_moves", nb.uint8[:, :, :]),
     ("pv_table", nb.uint64[:, :]),

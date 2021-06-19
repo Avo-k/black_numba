@@ -44,8 +44,8 @@ JIT compiler that translates a subset of Python and NumPy into fast machine code
 LLVM, via the llvmlite Python package.
 
 Perft speed in nodes/second:
-* Python: _____7 300 n/s 
-* Numba:  1 500 000 n/s 
+* Python:  _ __7 300 n/s 
+* Numba:   1 500 000 n/s 
 
 
 ## Name

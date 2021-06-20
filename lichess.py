@@ -3,7 +3,7 @@ import time
 import sys
 
 from position import parse_fen, print_position
-from constants import start_position
+from constants import start_position, LOWER_MATE
 from search import Black_numba, search, random_move
 from moves import get_move_uci, make_move
 from uci import parse_move
@@ -82,20 +82,30 @@ class Game:
 
         # set time variables
         start = time.time()
-        t = game_state["wtime" if self.bot_is_white else "btime"]
-        remaining_time = t / 1000 if isinstance(t, int) else t.minute * 60 + t.second
+        t, opp_t = (game_state["wtime"], game_state["btime"]) if self.bot_is_white else (
+        game_state["btime"], game_state["wtime"])
+
+        def in_sec(tim):
+            return tim / 1000 if isinstance(tim, int) else tim.minute * 60 + tim.second
+
+        remaining_time = in_sec(t)
+        remaining_opp_t = in_sec(opp_t)
 
         # Set limits
         time_limit = remaining_time / 60
         nodes_limit = time_limit * 100000
 
         # look for a move
-        move = None
+        move, depth = None, None
         for depth, move, score in search(self.bot, self.pos, print_info=True):
-            if time.time() - start > time_limit or self.bot.nodes > nodes_limit:
+            if time.time() - start > time_limit:
+                break
+            if self.bot.nodes > nodes_limit:
+                break
+            if score > LOWER_MATE:
                 break
 
-        actual_time = time.time() - start
+        actual_time = time.time() - start + 0.001
 
         try:
             client.bots.make_move(self.game_id, get_move_uci(move))
@@ -105,13 +115,23 @@ class Game:
         self.pos = make_move(self.pos, move)
         self.moves += " " + get_move_uci(move)
 
-        print(f"time: {round(actual_time, 2)} - kns: {round(self.bot.nodes / actual_time / 1000)}")
+        print(f"time: {actual_time:.2f} - kns: {self.bot.nodes / actual_time / 1000:.0f}")
+
+        # pondering
+        ponder_limit = min(time_limit / 2.5, remaining_opp_t / 150)
+        ponder_start = time.time()
+        ponder_depth = 0
+        for ponder_depth, _, _ in search(self.bot, self.pos, print_info=False):
+            if time.time() - ponder_start > ponder_limit or ponder_depth >= depth - 1:
+                break
+        print("-" * 12)
+        print(f"{ponder_depth=} in {time.time() - ponder_start:.2f} sec")
         print("-" * 40)
 
     def make_first_move(self):
         move = None
         for depth, move, score in search(self.bot, self.pos, print_info=True):
-            if depth == 10:
+            if depth == 8:
                 break
         client.bots.make_move(self.game_id, get_move_uci(move))
         self.pos = make_move(self.pos, move)

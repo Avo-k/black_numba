@@ -362,8 +362,5 @@ def search(bot, pos, print_info=False, depth_max=32):
                 print("info score cp", score,
                       "depth", depth, "nodes", bot.nodes, "pv", pv_line)
 
-            # print(bot.pv_length[:12])
-
         # print(score == bot.read_hash_entry(pos, depth, alpha, beta))
-        # bot.pv_table[0][0]
         yield depth, bot.pv_table[0][0], score

@@ -29,8 +29,8 @@ A position object store 12 piece bitboards, 1 for each chess piece
 
 e.g., the white pawn bitboard at the beginning of a game will be:
 
-* in decimal: 71776119061217280
-* in binary: 0b11111111000000000000000000000000000000000000000000000000
+* in decimal: `71776119061217280`
+* in binary: `0b11111111000000000000000000000000000000000000000000000000`
 
 and in a clearer form:
 ```

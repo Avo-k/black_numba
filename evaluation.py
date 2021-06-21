@@ -4,6 +4,15 @@ from position import Position
 from attack_tables import get_bishop_attacks, get_queen_attacks, king_attacks, knight_attacks
 
 
+@njit
+def get_game_phase_score(pos):
+    score = 0
+    for color in (black, white):
+        for piece in range(knight, king):
+            score += count_bits(pos.pieces[color][piece]) * material_score[piece]
+    return score
+
+
 @njit(cache=True)
 def king_mg(pos, sq, color):
     v = 0
@@ -118,6 +127,6 @@ def evaluate(pos) -> int:
                 bb = pop_bit(bb, sq)
 
         if color:
-            score *= -1
+            score = -score
 
     return -score if pos.side else score

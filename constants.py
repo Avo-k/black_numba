@@ -114,6 +114,9 @@ hash_numba_type = nb.from_dtype(hash_numpy_type)
 
 material_score = (100, 320, 330, 500, 950, 12000)
 
+mg_phase_score = 6000
+eg_phase_score = 500
+
 pawn_pst = (
     0, 0, 0, 0, 0, 0, 0, 0,
     -10, -4, 0, -5, -5, 0, -4, -10,

@@ -1,6 +1,7 @@
 import berserk
 import time
 import sys
+import chess.polyglot
 
 from position import parse_fen, print_position
 from constants import start_position, LOWER_MATE
@@ -26,6 +27,7 @@ class Game:
         self.pos = parse_fen(start_position)
         self.moves = ""
         self.bot = Black_numba()
+        self.theory = True
 
     def run(self):
         print("game start")
@@ -80,6 +82,22 @@ class Game:
         new_move = parse_move(self.pos, self.moves.split()[-1])
         self.pos = make_move(self.pos, new_move)
 
+        color = not bool(len(self.moves.split()) % 2)
+        bot_turn = self.bot_is_white == color
+        if not bot_turn:
+            return
+
+        # Look in the books
+        if self.theory:
+            entry = self.look_in_da_book(self.moves.split())
+            if entry:
+                self.client.bots.make_move(game_id, entry.move)
+                print("still theory")
+                return
+            else:
+                self.theory = False
+                print("end of theory")
+
         # set time variables
         start = time.time()
         t, opp_t = (game_state["wtime"], game_state["btime"]) if self.bot_is_white else (
@@ -129,6 +147,17 @@ class Game:
         print("-" * 40)
 
     def make_first_move(self):
+        # Look in the books
+        if self.theory:
+            entry = self.look_in_da_book(self.moves.split())
+            if entry:
+                self.client.bots.make_move(game_id, entry.move)
+                print("still theory")
+                return
+            else:
+                self.theory = False
+                print("end of theory")
+
         move = None
         for depth, move, score in search(self.bot, self.pos, print_info=True):
             if depth == 8:
@@ -137,9 +166,22 @@ class Game:
         self.pos = make_move(self.pos, move)
         self.moves += get_move_uci(move)
 
+    @staticmethod
+    def look_in_da_book(moves):
+        leela = chess.polyglot.open_reader("book/book_small.bin")
+        board = chess.Board()
+        for m in moves:
+            board.push_uci(m)
+        return leela.get(board)
+
 
 print("id name black_numba")
 print("id author Avo-k")
+print("compiling...")
+# make sure it's compiled
+search(Black_numba(), parse_fen(start_position), print_info=False, depth_max=1)
+print("compiled!")
+
 for event in client.bots.stream_incoming_events():
     if event['type'] == 'challenge':
         challenge = event['challenge']

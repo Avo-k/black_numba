@@ -235,3 +235,21 @@ semi_open_file_bonus = 10
 open_file_bonus = 20
 
 king_shield_bonus = 5
+
+knight_tropism_mg = 3
+bishop_tropism_mg = 2
+rook_tropism_mg = 2
+queen_tropism_mg = 2
+
+
+@njit
+def manhattan_distance(sq1, sq2):
+    F1, F2 = sq1 & 7, sq2 & 7
+    R1, R2 = sq1 >> 3, sq2 >> 3
+    return abs(R2 - R1) + abs(F2 - F1)
+
+
+arr_manhattan = np.array(
+    [manhattan_distance(sq1, sq2) for sq1 in range(64) for sq2 in range(64)],
+    dtype=np.uint8)
+arr_manhattan.shape = (64, 64)

@@ -143,7 +143,7 @@ class Game:
             if time.time() - ponder_start > ponder_limit or ponder_depth >= depth - 1:
                 break
         print("-" * 12)
-        print(f"{ponder_depth=} in {time.time() - ponder_start:.2f} sec")
+        print(f"{ponder_depth= } in {time.time() - ponder_start:.2f} sec")
         print("-" * 40)
 
     def make_first_move(self):

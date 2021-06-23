@@ -13,26 +13,6 @@ def get_game_phase_score(pos):
     return score
 
 
-def king_safety(pos, sq, color):
-    v = 0
-    # King shield
-    v += -15 + count_bits(king_attacks[sq] & pos.occupancy[color]) * king_shield_bonus
-
-    # # Pawn tropism
-    # p_tropism = 0
-    # nb_of_pawn = 0
-    # bb = pos.piece[color][pawn]
-    # kg_sq = get_ls1b_index(pos.piece[color][king])
-    #
-    # while bb:
-    #     sq = get_ls1b_index(bb)
-    #     p_tropism += arr_manhattan[kg_sq][sq]
-    #     nb_of_pawn += 1
-    #     bb = pop_bit(bb, sq)
-    #
-    # bb_opp = pos.piece[color ^ 1][pawn]
-
-
 @njit(nb.int64(Position.class_type.instance_type))
 def evaluate(pos) -> int:
     """return evaluation of a position from side-to-play perspective"""
@@ -72,6 +52,7 @@ def evaluate(pos) -> int:
                         # Open file
                         if not (pos.pieces[color][pawn] | pos.pieces[opp][pawn]) & file_masks[sq]:
                             score -= open_file_bonus
+                    score += -15 + count_bits(king_attacks[sq] & pos.occupancy[color]) * king_shield_bonus
 
                 elif piece == pawn:
                     if color:
@@ -100,28 +81,28 @@ def evaluate(pos) -> int:
                     moves = count_bits(get_rook_attacks(sq, pos.occupancy[both]))
                     score += (moves - 6) * 2
                     # Tropism
-                    tropism[opp] += arr_manhattan[sq][king_sq[color]] * rook_tropism_mg
+                    tropism[opp] += rook_tropism_mg * 8 - arr_manhattan[sq][king_sq[color]] * rook_tropism_mg
 
                 elif piece == queen:
                     # mobility (-19 to 19)
                     moves = count_bits(get_queen_attacks(sq, pos.occupancy[both]))
                     score += moves - 5
                     # Tropism
-                    tropism[opp] += arr_manhattan[sq][king_sq[color]] * queen_tropism_mg
+                    tropism[opp] += queen_tropism_mg * 8 - arr_manhattan[sq][king_sq[color]] * queen_tropism_mg
 
                 elif piece == knight:
                     # Mobility (from -16 to 16)
                     moves = count_bits(knight_attacks[sq] & ~pos.occupancy[color])
                     score += (moves - 4) * 4
                     # Tropism
-                    tropism[opp] += arr_manhattan[sq][king_sq[color]] * knight_tropism_mg
+                    tropism[opp] += knight_tropism_mg * 8 - arr_manhattan[sq][king_sq[color]] * knight_tropism_mg
 
                 elif piece == bishop:
                     # Mobility (-30 to 30)
                     moves = count_bits(get_bishop_attacks(sq, pos.occupancy[both]))
                     score += (moves - 3) * 5
                     # Tropism
-                    tropism[opp] += arr_manhattan[sq][king_sq[color]] * bishop_tropism_mg
+                    tropism[opp] += bishop_tropism_mg * 8 - arr_manhattan[sq][king_sq[color]] * bishop_tropism_mg
 
                 bb = pop_bit(bb, sq)
 
@@ -130,5 +111,7 @@ def evaluate(pos) -> int:
 
     score -= tropism[0]
     score += tropism[1]
+
+    # print(tropism[black] - tropism[white])
 
     return -score if pos.side else score

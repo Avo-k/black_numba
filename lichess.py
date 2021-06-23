@@ -120,7 +120,7 @@ class Game:
                 break
             if self.bot.nodes > nodes_limit:
                 break
-            if score > LOWER_MATE:
+            if not -LOWER_MATE < score < LOWER_MATE:
                 break
 
         actual_time = time.time() - start + 0.001

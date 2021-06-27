@@ -2,6 +2,7 @@ import berserk
 import time
 import sys
 import chess.polyglot
+import threading
 
 from position import parse_fen, print_position
 from constants import start_position, LOWER_MATE
@@ -16,9 +17,9 @@ session = berserk.TokenSession(API_TOKEN)
 client = berserk.Client(session=session)
 
 
-class Game:
-    def __init__(self, client, game_id):
-        # super().__init__(**kwargs)
+class Game(threading.Thread):
+    def __init__(self, client, game_id, **kwargs):
+        super().__init__(**kwargs)
         self.game_id = game_id
         self.client = client
         self.stream = client.bots.stream_game_state(game_id)

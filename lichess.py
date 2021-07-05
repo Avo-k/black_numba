@@ -25,14 +25,13 @@ class Game(threading.Thread):
         self.stream = client.bots.stream_game_state(game_id)
         self.current_state = next(self.stream)
         self.bot_is_white = self.current_state['white'].get('id') == bot_id
+        self.time_str = "wtime" if self.bot_is_white else "btime"
         self.pos = parse_fen(start_position)
         self.moves = ""
         self.bot = Black_numba()
         self.theory = True
 
     def run(self):
-        print("game start")
-
         # From Position
         if self.current_state['variant']['short'] == "FEN":
             self.pos = parse_fen(self.current_state['initialFen'])
@@ -48,7 +47,7 @@ class Game(threading.Thread):
             self.make_first_move()
 
         # if you have to start
-        elif not self.current_state['state']['moves'] and self.bot_is_white:
+        elif self.bot_is_white != self.pos.side:
             self.make_first_move()
 
         # main game loop
@@ -80,71 +79,44 @@ class Game(threading.Thread):
         if game_state['moves'] == self.moves:
             return
         self.moves = game_state['moves']
-        new_move = parse_move(self.pos, self.moves.split()[-1])
+        move_list = self.moves.split()
+        new_move = parse_move(self.pos, move_list[-1])
         self.pos = make_move(self.pos, new_move)
 
-        color = not bool(len(self.moves.split()) % 2)
-        bot_turn = self.bot_is_white == color
+        # is it bot turn ?
+        bot_turn = self.bot_is_white != self.pos.side
         if not bot_turn:
             return
 
         # Look in the books
         if self.theory:
-            entry = self.look_in_da_book(self.moves.split())
+            entry = self.look_in_da_book(move_list)
             if entry:
                 self.client.bots.make_move(game_id, entry.move)
                 print("still theory")
                 return
-            else:
-                self.theory = False
-                print("end of theory")
+            self.theory = False
+            print("end of theory")
 
-        # set time variables
-        start = time.time()
-        t, opp_t = (game_state["wtime"], game_state["btime"]) if self.bot_is_white else (
-        game_state["btime"], game_state["wtime"])
-
-        def in_sec(tim):
-            return tim / 1000 if isinstance(tim, int) else tim.minute * 60 + tim.second
-
-        remaining_time = in_sec(t)
-        remaining_opp_t = in_sec(opp_t)
-
-        # Set limits
-        time_limit = remaining_time / 60
-        nodes_limit = time_limit * 100000
+        # set time limit
+        remaining_time = game_state[self.time_str].timestamp()
+        time_limit = remaining_time / 30 * 1000
 
         # look for a move
-        move, depth = None, None
-        for depth, move, score in search(self.bot, self.pos, print_info=True):
-            if time.time() - start > time_limit:
-                break
-            if self.bot.nodes > nodes_limit:
-                break
-            if not -LOWER_MATE < score < LOWER_MATE:
-                break
-
-        actual_time = time.time() - start + 0.001
+        start = time.time()
+        depth, move, score = search(self.bot, self.pos, print_info=True, time_limit=time_limit)
+        time_spent_ms = (time.time() - start) * 1000 + 0.0001
 
         try:
             client.bots.make_move(self.game_id, get_move_uci(move))
-        except:  # you loose
+        except berserk.exceptions.ResponseError as e:  # you flagged
+            print(e)
+            print('you flagged')
             return
 
-        self.pos = make_move(self.pos, move)
-        self.moves += " " + get_move_uci(move)
+        print(f"time: {time_spent_ms:.0f} - kns: {self.bot.nodes / time_spent_ms:.0f}")
+        print(f"time delta: {time_spent_ms - time_limit:.0f} ms")
 
-        print(f"time: {actual_time:.2f} - kns: {self.bot.nodes / actual_time / 1000:.0f}")
-
-        # pondering
-        ponder_limit = min(time_limit / 2.5, remaining_opp_t / 150)
-        ponder_start = time.time()
-        ponder_depth = 0
-        for ponder_depth, _, _ in search(self.bot, self.pos, print_info=False):
-            if time.time() - ponder_start > ponder_limit or ponder_depth >= depth - 1:
-                break
-        print("-" * 12)
-        print(f"{ponder_depth= } in {time.time() - ponder_start:.2f} sec")
         print("-" * 40)
 
     def make_first_move(self):
@@ -155,33 +127,31 @@ class Game(threading.Thread):
                 self.client.bots.make_move(game_id, entry.move)
                 print("still theory")
                 return
-            else:
-                self.theory = False
-                print("end of theory")
+            self.theory = False
+            print("end of theory")
 
-        move = None
-        for depth, move, score in search(self.bot, self.pos, print_info=True):
-            if depth == 8:
-                break
+        # look for a move
+        depth, move, score = search(self.bot, self.pos, print_info=True)
+
         client.bots.make_move(self.game_id, get_move_uci(move))
         self.pos = make_move(self.pos, move)
         self.moves += get_move_uci(move)
 
     @staticmethod
     def look_in_da_book(moves):
-        leela = chess.polyglot.open_reader("book/book_small.bin")
+        fruit = chess.polyglot.open_reader("book/book_small.bin")
         board = chess.Board()
         for m in moves:
             board.push_uci(m)
-        return leela.get(board)
+        return fruit.get(board)
 
 
 print("id name black_numba")
 print("id author Avo-k")
 print("compiling...")
-# make sure it's compiled
-search(Black_numba(), parse_fen(start_position), print_info=False, depth_max=1)
-print("compiled!")
+s = time.time()
+search(Black_numba(), parse_fen(start_position), print_info=False, depth_limit=1)
+print(f"compiled in {time.time() - s:.2f} seconds")
 
 for event in client.bots.stream_incoming_events():
     if event['type'] == 'challenge':
@@ -194,11 +164,11 @@ for event in client.bots.stream_incoming_events():
             client.bots.decline_challenge(challenge['id'])
 
     elif event['type'] == 'gameStart':
+        print(event['type'])
         game_id = event['game']['id']
         game = Game(client=client, game_id=game_id)
         game.run()
         del game
 
     else:  # challengeDeclined, gameFinish, challengeCanceled
-        if event['type'] not in ('challengeDeclined', 'gameFinish', 'challengeCanceled'):
-            print('NEW EVENT', event)
+        print(event['type'])

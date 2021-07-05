@@ -1,7 +1,9 @@
+import time
+
 from constants import *
 from moves import *
 from bb_operations import get_ls1b_index
-from evaluation import evaluate
+from evaluation import evaluate, get_game_phase_score
 
 
 def random_move(pos) -> int:
@@ -21,7 +23,10 @@ def random_move(pos) -> int:
     ("score_pv", nb.b1),
     ("hash_table", hash_numba_type[:]),
     ("repetition_table", nb.uint64[:]),
-    ("repetition_index", nb.uint16)])
+    ("repetition_index", nb.uint16),
+    ("time_limit", nb.uint64),
+    ("start", nb.uint64),
+    ("stopped", nb.b1)])
 class Black_numba:
     def __init__(self):
         self.nodes = 0
@@ -40,6 +45,23 @@ class Black_numba:
         # Repetitions
         self.repetition_table = np.zeros(1000, dtype=np.uint64)
         self.repetition_index = 0
+        # Time management
+        self.time_limit = 1000
+        self.start = 0
+        self.stopped = False
+
+    def reset_bot(self, time_limit):
+        self.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
+        self.history_moves = np.zeros((2, 6, 64), dtype=np.uint8)
+        self.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
+        self.pv_length = np.zeros(MAX_PLY, dtype=np.uint64)
+        self.score_pv = False
+        self.nodes = 0
+        self.stopped = False
+        self.time_limit = time_limit
+        with nb.objmode(start=nb.uint64):
+            start = time.time() * 1000
+        self.start = start
 
     def read_hash_entry(self, pos, depth, alpha, beta):
         entry = self.hash_table[pos.hash_key % MAX_HASH_SIZE]
@@ -80,6 +102,12 @@ class Black_numba:
             return True
         return False
 
+    def communicate(self):
+        with nb.objmode(spent=nb.uint16):
+            spent = time.time() * 1000 - self.start
+        if spent > self.time_limit:
+            self.stopped = True
+
 
 @njit
 def enable_pv_scoring(bot, move_list):
@@ -88,12 +116,6 @@ def enable_pv_scoring(bot, move_list):
     if bot.pv_table[0][bot.ply] in move_list:
         bot.score_pv = True
         bot.follow_pv = True
-
-    # for move in move_list:
-    #     if bot.pv_table[0][bot.ply] == move:
-    #         bot.score_pv = True
-    #         bot.follow_pv = True
-    #         break
 
 
 @njit(nb.uint64(Black_numba.class_type.instance_type, Position.class_type.instance_type, nb.uint64), cache=True)
@@ -144,6 +166,10 @@ def print_move_scores(bot, pos):
 
 @njit
 def quiescence(bot, pos, alpha, beta):
+
+    if not bot.nodes & time_precision:
+        bot.communicate()
+
     bot.nodes += 1
 
     # We are way too deep for lots of arrays
@@ -175,6 +201,9 @@ def quiescence(bot, pos, alpha, beta):
         bot.ply -= 1
         bot.repetition_index -= 1
 
+        if bot.stopped:
+            return 0
+
         if score > alpha:
             alpha = score
             if score >= beta:
@@ -201,6 +230,9 @@ def negamax(bot, pos, depth, alpha, beta):
         # This position has already been searched
         # at this depth or higher
         return hash_entry
+
+    if not bot.nodes & time_precision:
+        bot.communicate()
 
     bot.pv_length[bot.ply] = bot.ply
 
@@ -233,6 +265,9 @@ def negamax(bot, pos, depth, alpha, beta):
         score = -negamax(bot, null_pos, depth - 1 - 2, -beta, -beta + 1)
         bot.ply -= 1
         bot.repetition_index -= 1
+
+        if bot.stopped:
+            return 0
 
         if score >= beta:
             return beta
@@ -283,6 +318,10 @@ def negamax(bot, pos, depth, alpha, beta):
 
         bot.ply -= 1
         bot.repetition_index -= 1
+
+        if bot.stopped:
+            return 0
+
         moves_searched += 1
 
         # fail-hard beta cutoff
@@ -326,19 +365,23 @@ def negamax(bot, pos, depth, alpha, beta):
 
 
 @njit
-def search(bot, pos, print_info=False, depth_max=32):
+def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000):
     """yield depth searched, best move, score (cp)"""
+    #
+    # game_phase_score = get_game_phase_score(pos)
+    # print("game_phase:", game_phase_score, "opening" if game_phase_score > mg_phase_score else "end_game" if game_phase_score < eg_phase_score else "middle_game")
 
-    bot.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
-    bot.history_moves = np.zeros((2, 6, 64), dtype=np.uint8)
-    bot.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
-    bot.pv_length = np.zeros(MAX_PLY, dtype=np.uint64)
-    bot.score_pv = False
-    bot.nodes = 0
+    bot.reset_bot(time_limit=time_limit)
+
+    depth, score = 0, 0
 
     alpha, beta = -BOUND_INF, BOUND_INF
 
-    for depth in range(1, depth_max + 1):
+    for depth in range(1, depth_limit + 1):
+
+        if bot.stopped or not -LOWER_MATE < score < LOWER_MATE:
+            break
+
         bot.follow_pv = True
 
         score = negamax(bot, pos, depth, alpha, beta)
@@ -362,5 +405,9 @@ def search(bot, pos, print_info=False, depth_max=32):
                 print("info score cp", score,
                       "depth", depth, "nodes", bot.nodes, "pv", pv_line)
 
-        # print(score == bot.read_hash_entry(pos, depth, alpha, beta))
-        yield depth, bot.pv_table[0][0], score
+            # with nb.objmode(spent=nb.uint64):
+            #     spent = time.time() - bot.start
+            # print("spent:", spent)
+
+    # print(score == bot.read_hash_entry(pos, depth, alpha, beta))
+    return depth, bot.pv_table[0][0], score

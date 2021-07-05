@@ -72,6 +72,8 @@ repetitions_position = "2r3k1/R7/8/1R6/8/8/P4KPP/8 w - - 0 40"
 mate_in_2 = "k7/6R1/2K5/8/8/8/8/8 w - - 16 9"
 mate_in_4 = "2k5/5R2/3K4/8/8/8/8/8 w - - 12 7"
 
+FENS = (start_position, tricky_position, killer_position, cmk_position, repetitions_position, mate_in_2, mate_in_4)
+
 # Mating bounds for mating scores
 BOUND_INF, UPPER_MATE, LOWER_MATE = 50000, 49000, 48000
 
@@ -92,6 +94,9 @@ MAX_PLY = 64
 full_depth_moves = 4
 reduction_limit = 3
 
+# Time
+time_precision = 2047
+
 # Hash Constants
 
 # init random hash keys
@@ -111,11 +116,18 @@ hash_numba_type = nb.from_dtype(hash_numpy_type)
 # Evaluation Constants
 
 # Material values
+#                    P    N    B    R    Q      K
+material_scores = ((100, 325, 335, 500, 1000, 12000),
+                   (110, 310, 315, 550, 1050, 12000))
 
-material_score = (100, 320, 330, 500, 950, 12000)
+#               P  N  B  R  Q  K
+phase_scores = (0, 1, 1, 2, 4, 0)
+TOTAL_PHASE = 24
 
 mg_phase_score = 6000
-eg_phase_score = 500
+eg_phase_score = 1000
+
+opening, end_game, middle_game = np.arange(3, dtype=np.uint8)
 
 pawn_pst = (
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -126,6 +138,16 @@ pawn_pst = (
     -10, -4, 0, 17, 13, 0, -4, -10,
     -10, -4, 0, 16, 12, 0, -4, -10,
     0, 0, 0, 0, 0, 0, 0, 0)
+
+pawn_pst_eg = (
+    0, 0, 0, 0, 0, 0, 0, 0,
+    -5, -2, 0, 0, 0, 0, -2, -5,
+    -5, -2, 0, 3, 3, 0, -2, -5,
+    -5, -2, 1, 7, 7, 1, -2, -5,
+    -5, -2, 1, 7, 7, 1, -2, -5,
+    -5, -2, 1, 7, 7, 1, -2, -5,
+    -5, -2, 1, 7, 7, 1, -2, -5,
+    0, 0, 0, 0, 0, 0, 0, -5)
 
 knight_pst = (
     -20, 0, -10, -10, -10, -10, -10, -20,
@@ -157,17 +179,26 @@ rook_pst = (
     -5, 0, 0, 0, 0, 0, 0, -5,
     0, 0, 0, 5, 5, 0, 0, 0)
 
-king_pst = (
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 5, 5, 5, 5, 0, 0,
-    0, 5, 5, 10, 10, 5, 5, 0,
-    0, 5, 10, 20, 20, 10, 5, 0,
-    0, 5, 10, 20, 20, 10, 5, 0,
-    0, 0, 5, 10, 10, 5, 0, 0,
-    0, 5, 5, -5, -5, 0, 5, 0,
-    0, 0, 5, 0, -15, 0, 10, 0)
+king_pst_eg = (-17, -14, -10, -7, -7, -10, -14, -17,
+               -10, -7, -4, 0, 0, -4, -7, -10,
+               -10, -4, 6, 10, 10, 6, -4, -10,
+               -10, -4, 10, 13, 13, 10, -4, -10,
+               -10, -4, 10, 13, 13, 10, -4, -10,
+               -10, -4, 6, 10, 10, 6, -4, -10,
+               -10, -10, 0, 0, 0, 0, -10, -10,
+               -17, -10, -10, -10, -10, -10, -10, -17)
 
-PST = np.array((pawn_pst, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst), dtype=np.int8)
+king_pst = (-10, -14, -14, -17, -17, -14, -14, -10,
+            -10, -14, -14, -17, -17, -14, -14, -10,
+            -10, -14, -14, -17, -17, -14, -14, -10,
+            -10, -14, -14, -17, -17, -14, -14, -10,
+            -7, -10, -10, -14, -14, -10, -10, -7,
+            -4, -7, -7, -7, -7, -7, -7, -4,
+            6, 6, 0, 0, 0, 0, 6, 6,
+            6, 10, 3, 0, 0, 3, 10, 6)
+
+PST = np.array(((pawn_pst, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst),
+                (pawn_pst_eg, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst_eg)), dtype=np.int8)
 
 mirror_pst = (
     a1, b1, c1, d1, e1, f1, g1, h1,
@@ -240,6 +271,11 @@ knight_tropism_mg = 3
 bishop_tropism_mg = 2
 rook_tropism_mg = 2
 queen_tropism_mg = 2
+
+knight_tropism_eg = 1
+bishop_tropism_eg = 1
+rook_tropism_eg = 1
+queen_tropism_eg = 4
 
 
 @njit

@@ -2,6 +2,7 @@ from constants import *
 from bb_operations import *
 from position import Position
 from attack_tables import get_bishop_attacks, get_queen_attacks, king_attacks, knight_attacks, get_rook_attacks
+from pst import PST
 
 
 @njit(nb.uint16(Position.class_type.instance_type), cache=True)
@@ -171,17 +172,17 @@ def evaluate(pos) -> int:
     eg_score = 0
 
     game_phase_score = get_game_phase_score(pos)
-
-    wk_sq = get_ls1b_index(pos.pieces[white][king])
-    bk_sq = get_ls1b_index(pos.pieces[black][king])
-    kings_sq = (wk_sq, bk_sq)
+    kings_sq = (get_ls1b_index(pos.pieces[white][king]), get_ls1b_index(pos.pieces[black][king]))
 
     for color in (black, white):
 
         opp = color ^ 1
 
+        # double pawns
         double_pawns = count_bits(pos.pieces[color][pawn] & (pos.pieces[color][pawn] << 8))
         mg_score += double_pawns * double_pawn_penalty
+        # bishop counter
+        bish = 0
 
         for piece in range(6):
             bb = pos.pieces[color][piece]
@@ -218,10 +219,15 @@ def evaluate(pos) -> int:
                     eg_score += knight_eg(pos, sq, kings_sq, opp, color)
 
                 elif piece == bishop:
+                    bish += 1
                     mg_score += bishop_mg(pos, sq, kings_sq, opp)
                     eg_score += bishop_eg(pos, sq, kings_sq, opp)
 
                 bb = pop_bit(bb, sq)
+
+        if bish > 1:
+            mg_score += bishop_pair_mg
+            eg_score += bishop_pair_eg
 
         if color:
             mg_score, eg_score = -mg_score, -eg_score

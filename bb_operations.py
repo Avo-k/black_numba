@@ -18,6 +18,7 @@ big-endian rank-file mapping:
 
 """
 
+
 @njit(nb.b1(nb.uint64, nb.uint8), cache=True)
 def get_bit(bb, sq):
     return bb & (1 << sq)

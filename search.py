@@ -48,7 +48,7 @@ class Black_numba:
         # Time management
         self.time_limit = 1000
         self.start = 0
-        self.stopped = False
+        self.stopped = True
 
     def reset_bot(self, time_limit):
         self.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
@@ -367,17 +367,15 @@ def negamax(bot, pos, depth, alpha, beta):
 @njit
 def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000):
     """yield depth searched, best move, score (cp)"""
-    #
-    # game_phase_score = get_game_phase_score(pos)
-    # print("game_phase:", game_phase_score, "opening" if game_phase_score > mg_phase_score else "end_game" if game_phase_score < eg_phase_score else "middle_game")
 
     bot.reset_bot(time_limit=time_limit)
 
     depth, score = 0, 0
-
     alpha, beta = -BOUND_INF, BOUND_INF
 
     for depth in range(1, depth_limit + 1):
+
+        # print(depth, bot.stopped)
 
         if bot.stopped or not -LOWER_MATE < score < LOWER_MATE:
             break
@@ -389,7 +387,6 @@ def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000):
         if score <= alpha or score >= beta:
             alpha, beta = -BOUND_INF, BOUND_INF
             continue
-
         alpha, beta = score - 50, score + 50
 
         if print_info:

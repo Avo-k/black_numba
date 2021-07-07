@@ -1,7 +1,6 @@
 import numpy as np
 import numba as nb
 from numba import njit
-from bb_operations import print_bb
 
 EMPTY = np.uint64(0)
 BIT = np.uint64(1)
@@ -10,7 +9,6 @@ UNIVERSE = np.uint64(0xffffffffffffffff)
 white, black, both = np.arange(3, dtype=np.uint8)
 
 pawn, knight, bishop, rook, queen, king = range(6)
-# piece_names = ("pawn", "knight", "bishop", "rook", "queen", "king")
 
 a8, b8, c8, d8, e8, f8, g8, h8, \
 a7, b7, c7, d7, e7, f7, g7, h7, \
@@ -19,8 +17,15 @@ a5, b5, c5, d5, e5, f5, g5, h5, \
 a4, b4, c4, d4, e4, f4, g4, h4, \
 a3, b3, c3, d3, e3, f3, g3, h3, \
 a2, b2, c2, d2, e2, f2, g2, h2, \
-a1, b1, c1, d1, e1, f1, g1, h1, no_sq = range(65)
+a1, b1, c1, d1, e1, f1, g1, h1, no_sq = np.arange(65, dtype=np.uint8)
 squares = range(64)
+
+black_squares = np.array(sorted([s for s in range(1, 64, 2) if not (s // 8) % 2] +
+                         [s for s in range(0, 64, 2) if (s // 8) % 2]),
+                         dtype=np.uint8)
+white_squares = np.array(sorted([s for s in range(0, 64, 2) if not (s // 8) % 2] +
+                         [s for s in range(1, 64, 2) if (s // 8) % 2]),
+                         dtype=np.uint8)
 
 square_to_coordinates = (
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
@@ -116,9 +121,9 @@ hash_numba_type = nb.from_dtype(hash_numpy_type)
 # Evaluation Constants
 
 # Material values
-#                    P    N    B    R    Q      K
-material_scores = ((100, 325, 335, 500, 1000, 12000),
-                   (110, 310, 315, 550, 1050, 12000))
+#                    P   N    B    R    Q     K
+material_scores = ((70, 325, 325, 500, 975, 12000),
+                   (90, 315, 315, 500, 975, 12000))
 
 #               P  N  B  R  Q  K
 phase_scores = (0, 1, 1, 2, 4, 0)
@@ -128,77 +133,6 @@ mg_phase_score = 6000
 eg_phase_score = 1000
 
 opening, end_game, middle_game = np.arange(3, dtype=np.uint8)
-
-pawn_pst = (
-    0, 0, 0, 0, 0, 0, 0, 0,
-    -10, -4, 0, -5, -5, 0, -4, -10,
-    -10, -4, 0, 8, 5, 0, -4, -10,
-    -10, -4, 0, 16, 12, 0, -4, -10,
-    -10, -4, 0, 18, 14, 0, -4, -10,
-    -10, -4, 0, 17, 13, 0, -4, -10,
-    -10, -4, 0, 16, 12, 0, -4, -10,
-    0, 0, 0, 0, 0, 0, 0, 0)
-
-pawn_pst_eg = (
-    0, 0, 0, 0, 0, 0, 0, 0,
-    -5, -2, 0, 0, 0, 0, -2, -5,
-    -5, -2, 0, 3, 3, 0, -2, -5,
-    -5, -2, 1, 7, 7, 1, -2, -5,
-    -5, -2, 1, 7, 7, 1, -2, -5,
-    -5, -2, 1, 7, 7, 1, -2, -5,
-    -5, -2, 1, 7, 7, 1, -2, -5,
-    0, 0, 0, 0, 0, 0, 0, -5)
-
-knight_pst = (
-    -20, 0, -10, -10, -10, -10, -10, -20,
-    -10, 0, 0, 3, 3, 0, 0, -10,
-    -10, 0, 5, 5, 5, 5, 0, -10,
-    -10, 0, 5, 10, 10, 5, 0, -10,
-    -10, 0, 5, 10, 10, 5, 0, -10,
-    -10, 0, 5, 5, 5, 5, 0, -10,
-    -10, 0, 0, 3, 3, 0, 0, -10,
-    -20, -10, -10, -10, -10, -10, -10, -20)
-
-bishop_pst = (
-    -2, -2, -2, -2, -2, -2, -2, -2,
-    -2, 8, 5, 5, 5, 5, 8, -2,
-    -2, 3, 3, 5, 5, 3, 3, -2,
-    -2, 2, 5, 4, 4, 5, 2, -2,
-    -2, 2, 5, 4, 4, 5, 2, -2,
-    -2, 3, 3, 5, 5, 3, 3, -2,
-    -2, 8, 5, 5, 5, 5, 8, -2,
-    -2, -2, -2, -2, -2, -2, -2, -2)
-
-rook_pst = (
-    0, 0, 0, 0, 0, 0, 0, 0,
-    5, 10, 10, 10, 10, 10, 10, 5,
-    -5, 0, 0, 0, 0, 0, 0, -5,
-    -5, 0, 0, 0, 0, 0, 0, -5,
-    -5, 0, 0, 0, 0, 0, 0, -5,
-    -5, 0, 0, 0, 0, 0, 0, -5,
-    -5, 0, 0, 0, 0, 0, 0, -5,
-    0, 0, 0, 5, 5, 0, 0, 0)
-
-king_pst_eg = (-17, -14, -10, -7, -7, -10, -14, -17,
-               -10, -7, -4, 0, 0, -4, -7, -10,
-               -10, -4, 6, 10, 10, 6, -4, -10,
-               -10, -4, 10, 13, 13, 10, -4, -10,
-               -10, -4, 10, 13, 13, 10, -4, -10,
-               -10, -4, 6, 10, 10, 6, -4, -10,
-               -10, -10, 0, 0, 0, 0, -10, -10,
-               -17, -10, -10, -10, -10, -10, -10, -17)
-
-king_pst = (-10, -14, -14, -17, -17, -14, -14, -10,
-            -10, -14, -14, -17, -17, -14, -14, -10,
-            -10, -14, -14, -17, -17, -14, -14, -10,
-            -10, -14, -14, -17, -17, -14, -14, -10,
-            -7, -10, -10, -14, -14, -10, -10, -7,
-            -4, -7, -7, -7, -7, -7, -7, -4,
-            6, 6, 0, 0, 0, 0, 6, 6,
-            6, 10, 3, 0, 0, 3, 10, 6)
-
-PST = np.array(((pawn_pst, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst),
-                (pawn_pst_eg, knight_pst, bishop_pst, rook_pst, np.zeros(64), king_pst_eg)), dtype=np.int8)
 
 mirror_pst = (
     a1, b1, c1, d1, e1, f1, g1, h1,
@@ -267,6 +201,9 @@ open_file_bonus = 20
 
 king_shield_bonus = 5
 
+bishop_pair_mg = 50
+bishop_pair_eg = 70
+
 knight_tropism_mg = 3
 bishop_tropism_mg = 2
 rook_tropism_mg = 2
@@ -276,6 +213,9 @@ knight_tropism_eg = 1
 bishop_tropism_eg = 1
 rook_tropism_eg = 1
 queen_tropism_eg = 4
+
+pawns_on_bishop_colour_opening = (9,6,3,0,-3,-6,-9,-12,-15)
+pawns_on_bishop_colour_endgame = (12,8,4,0,-4,-8,-12,-16,-20)
 
 
 @njit

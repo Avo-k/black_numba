@@ -166,7 +166,7 @@ def king_eg(pos, sq, opp, color):
 
 
 @njit(nb.int64(Position.class_type.instance_type))
-def evaluate(pos) -> int:
+def evaluate(pos, lazy=False) -> int:
     """return evaluation of a position from side-to-play perspective"""
     mg_score = 0
     eg_score = 0
@@ -197,6 +197,10 @@ def evaluate(pos) -> int:
                 # Positional score
                 mg_score += PST[opening][piece][sq]
                 eg_score += PST[end_game][piece][sq]
+
+                if lazy:
+                    bb = pop_bit(bb, sq)
+                    continue
 
                 if piece == king:
                     mg_score += king_mg(pos, sq, opp, color)

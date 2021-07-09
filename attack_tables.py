@@ -268,10 +268,8 @@ rook_attacks = init_sliders(np.empty((64, 4096), dtype=np.uint64), bish=False)
 # leapers
 pawn_attacks = np.fromiter((mask_pawn_attacks(color, sq) for color in range(2) for sq in squares), dtype=np.uint64)
 pawn_attacks.shape = (2, 64)
-
-knight_attacks = np.fromiter((mask_knight_attacks(i) for i in squares), dtype=np.uint64)
-
-king_attacks = np.fromiter((mask_king_attacks(i) for i in squares), dtype=np.uint64)
+knight_attacks = np.fromiter((mask_knight_attacks(sq) for sq in squares), dtype=np.uint64)
+king_attacks = np.fromiter((mask_king_attacks(sq) for sq in squares), dtype=np.uint64)
 
 
 @njit(nb.uint64(nb.uint8, nb.uint64), cache=True)

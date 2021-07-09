@@ -74,8 +74,10 @@ tricky_position = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQk
 killer_position = "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
 cmk_position = "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9"
 repetitions_position = "2r3k1/R7/8/1R6/8/8/P4KPP/8 w - - 0 40"
+mate_in_3 = "1k6/6R1/3K4/8/8/8/8/8 w - - 18 10"
 mate_in_2 = "k7/6R1/2K5/8/8/8/8/8 w - - 16 9"
 mate_in_4 = "2k5/5R2/3K4/8/8/8/8/8 w - - 12 7"
+bnk_mate = "1k6/8/8/8/8/8/8/1K2BN2 w - - 0 1"
 
 FENS = (start_position, tricky_position, killer_position, cmk_position, repetitions_position, mate_in_2, mate_in_4)
 
@@ -229,3 +231,5 @@ arr_manhattan = np.array(
     [manhattan_distance(sq1, sq2) for sq1 in range(64) for sq2 in range(64)],
     dtype=np.uint8)
 arr_manhattan.shape = (64, 64)
+
+stopped = False

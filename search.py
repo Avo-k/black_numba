@@ -1,6 +1,7 @@
 import time
 
 from constants import *
+import constants
 from moves import *
 from bb_operations import get_ls1b_index
 from evaluation import evaluate, get_game_phase_score
@@ -25,6 +26,7 @@ def random_move(pos) -> int:
     ("repetition_table", nb.uint64[:]),
     ("repetition_index", nb.uint16),
     ("time_limit", nb.uint64),
+    ("node_limit", nb.uint64),
     ("start", nb.uint64),
     ("stopped", nb.b1)])
 class Black_numba:
@@ -47,10 +49,11 @@ class Black_numba:
         self.repetition_index = 0
         # Time management
         self.time_limit = 1000
+        self.node_limit = 10**7
         self.start = 0
         self.stopped = True
 
-    def reset_bot(self, time_limit):
+    def reset_bot(self, time_limit, node_limit):
         self.killer_moves = np.zeros((2, MAX_PLY), dtype=np.uint64)
         self.history_moves = np.zeros((2, 6, 64), dtype=np.uint8)
         self.pv_table = np.zeros((MAX_PLY, MAX_PLY), dtype=np.uint64)
@@ -59,6 +62,7 @@ class Black_numba:
         self.nodes = 0
         self.stopped = False
         self.time_limit = time_limit
+        self.node_limit = node_limit
         with nb.objmode(start=nb.uint64):
             start = time.time() * 1000
         self.start = start
@@ -105,7 +109,10 @@ class Black_numba:
     def communicate(self):
         with nb.objmode(spent=nb.uint16):
             spent = time.time() * 1000 - self.start
-        if spent > self.time_limit:
+            # if constants.stopped:
+            #     print("stopped")
+            #     self.stopped = True
+        if spent > self.time_limit or self.nodes > self.node_limit:
             self.stopped = True
 
 
@@ -365,21 +372,17 @@ def negamax(bot, pos, depth, alpha, beta):
 
 
 @njit
-def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000):
+def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000, node_limit=10**7):
     """yield depth searched, best move, score (cp)"""
 
-    bot.reset_bot(time_limit=time_limit)
+    bot.reset_bot(time_limit=time_limit, node_limit=node_limit)
 
     depth, score = 0, 0
     alpha, beta = -BOUND_INF, BOUND_INF
 
     for depth in range(1, depth_limit + 1):
-
-        # print(depth, bot.stopped)
-
         if bot.stopped or not -LOWER_MATE < score < LOWER_MATE:
             break
-
         bot.follow_pv = True
 
         score = negamax(bot, pos, depth, alpha, beta)
@@ -391,20 +394,19 @@ def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000):
 
         if print_info:
             pv_line = " ".join([get_move_uci(bot.pv_table[0][c]) for c in range(bot.pv_length[0])])
-
+            s_score = "mate"
             if -UPPER_MATE < score < -LOWER_MATE:
-                print("info score mate", -(score + UPPER_MATE) // 2 - 1,
-                      "depth", depth, "nodes", bot.nodes, "pv", pv_line)
+                score = -(score + UPPER_MATE) // 2
             elif LOWER_MATE < score < UPPER_MATE:
-                print("info score mate", (UPPER_MATE - score) // 2 + 1,
-                      "depth", depth, "nodes", bot.nodes, "pv", pv_line)
+                score = (UPPER_MATE - score) // 2 + 1
             else:
-                print("info score cp", score,
-                      "depth", depth, "nodes", bot.nodes, "pv", pv_line)
+                s_score = "cp"
+            with nb.objmode(ms_spent=nb.float64):
+                ms_spent = time.time() * 1000 - bot.start
+            nps = int(bot.nodes / ms_spent * 1000)
 
-            # with nb.objmode(spent=nb.uint64):
-            #     spent = time.time() - bot.start
-            # print("spent:", spent)
+            print("info", "depth", depth, "score", s_score, score, "nodes", bot.nodes,
+                  "nps", nps, "time", int(ms_spent), "pv", pv_line)
 
     # print(score == bot.read_hash_entry(pos, depth, alpha, beta))
     return depth, bot.pv_table[0][0], score

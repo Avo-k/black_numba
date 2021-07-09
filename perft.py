@@ -71,7 +71,7 @@ def debug_iterative_perft(depth_max=3):
             assert r == result
 
 
-@nb.njit
+@njit
 def compiled_perft(board, depth):
     """fast compiled perft test"""
     if depth == 0:
@@ -84,6 +84,21 @@ def compiled_perft(board, depth):
             c = compiled_perft(new_board, depth - 1)
             count += c
     return count
+
+
+def uci_perft(pos, depth):
+    """fast compiled perft test"""
+    moves = generate_moves(pos)
+    total = 0
+    for m in moves:
+        count = 0
+        new_board = make_move(pos, m)
+        if new_board is not None:
+            c = compiled_perft(new_board, depth - 1)
+            count += c
+        total += count
+        print(f"{get_move_uci(m)}: {count}")
+    print("\nnodes searched:", total)
 
 
 def fast_iterative_perft(depth_max=5):

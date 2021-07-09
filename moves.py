@@ -74,6 +74,7 @@ def get_move_castling(move):
 
 @njit(cache=True)
 def get_move_uci(move):
+    """get the uci string of a move"""
     return str(square_to_coordinates[get_move_source(move)]) + str(square_to_coordinates[get_move_target(move)]) + \
            (piece_to_letter[black][get_move_promote_to(move)] if get_move_promote_to(move) else '')
 
@@ -459,3 +460,21 @@ def make_null_move(pos_orig):
     pos.hash_key ^= side_key
 
     return pos
+
+
+def parse_move(pos, uci_move: str) -> int:
+    """encode a uci move"""
+
+    source = (ord(uci_move[0]) - ord('a')) + ((8 - int(uci_move[1])) * 8)
+    target = (ord(uci_move[2]) - ord('a')) + ((8 - int(uci_move[3])) * 8)
+
+    for move in generate_moves(pos):
+        if get_move_source(move) == source and get_move_target(move) == target:
+            promoted_piece = get_move_promote_to(move)
+            if promoted_piece:
+                for p, s in enumerate(('n', 'b', 'r', 'q'), 1):
+                    if promoted_piece == p and uci_move[4] == s:
+                        return move
+                return 0    # in case of illegal promotion (e.g. e7d8f)
+            return move
+    return 0

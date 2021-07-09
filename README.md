@@ -96,7 +96,7 @@ Perft speed in nodes/second:
 
 ## Name
 
-Black Mambas are a variety of snake 10 times faster than pythons.
+Black mambas are a variety of snake 10 times faster than pythons.
 
 
 ## Credits

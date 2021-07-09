@@ -1,6 +1,6 @@
 # black_numba
 
-**Project still in developement**
+**Project still in development**
 
 Far from my first chess engine [Skormfish](https://github.com/Avo-k/skormfish) 
 written in a clear pythonic style, black_numba is a Numba-enhanced bitboard
@@ -8,7 +8,7 @@ chess engine written with performance in mind.
 
 My goal is in a 1st time to make a strong engine in python and then in a 2nd
 to shape its play-style to make it very aggressive and fun-to-play-against for
-humans. Even if it has to become weaker in the process, a husler engine which 
+humans. Even if it has to become weaker in the process, a hustler engine which 
 sacrifice pieces for tempo and mobility and try to dirty flag you is my final 
 goal.
 

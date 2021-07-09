@@ -55,6 +55,7 @@ I also added 3 occupancy bitboards (white, black, both) for move generation purp
   * Late move reduction (LMR)
   * Null-move pruning
   * Aspiration windows
+  * TODO: lazy search
 * Quiescence search (only captures)
 
 ### Move ordering
@@ -76,10 +77,14 @@ I also added 3 occupancy bitboards (white, black, both) for move generation purp
 * Piece-square tables
 * Double, isolated and passed pawns
 * Open and semi-open files for rooks and kings
-* shield pawn for king
-* bishop and queen basic mobility
-* bishop pair
-* tempo
+* Shield-pawn for king
+* Pieces mobility
+* Bishop pair
+* Tempo
+* Pieces/ king tropism (Manhattan distance weighted by piece value)
+* "anti-mobility" trick for king
+  
+* Tapered eval to remove evaluation discontinuity
 * lazy eval
 
 

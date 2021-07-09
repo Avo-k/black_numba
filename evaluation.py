@@ -149,7 +149,7 @@ def king_mg(pos, sq, opp, color):
 
     # "Anti-mobility"
     moves = count_bits(get_queen_attacks(sq, pos.occupancy[both]))
-    v -= (moves - 5) * 2
+    v -= (moves - 5)
     return v
 
 
@@ -158,10 +158,6 @@ def king_eg(pos, sq, opp, color):
     v = 0
     # Pawn shield
     v += count_bits(king_attacks[sq] & pos.occupancy[color]) * king_shield_bonus
-
-    # "Anti-mobility"
-    moves = count_bits(get_queen_attacks(sq, pos.occupancy[both]))
-    v -= moves - 8
     return v
 
 

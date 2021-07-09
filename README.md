@@ -44,12 +44,12 @@ and in a clearer form:
 1  ·  ·  ·  ·  ·  ·  ·  · 
    A  B  C  D  E  F  G  H
    ```
-We also add 3 occupancy bitboards (white, black, both) for move generation purpose.
+I also added 3 occupancy bitboards (white, black, both) for move generation purpose.
 
 
 ## Search
 ### Iterative deepening
-* Negamax serch
+* Negamax search
   * Alpha-Beta pruning
   * Principal variation search (PVS)
   * Late move reduction (LMR)
@@ -60,12 +60,15 @@ We also add 3 occupancy bitboards (white, black, both) for move generation purpo
 ### Move ordering
   * Principal Variation (PV)
   
-  For captures:
+  Captures:
   * Most Valuable Victim - Least Valuable Aggressor (MMV LVA)
   
-  For quiet moves:
+  Quiet moves:
   * Killer heuristic
   * History heuristic
+
+  All moves:
+  * Hash table
 
 ## Evaluation
 
@@ -75,6 +78,9 @@ We also add 3 occupancy bitboards (white, black, both) for move generation purpo
 * Open and semi-open files for rooks and kings
 * shield pawn for king
 * bishop and queen basic mobility
+* bishop pair
+* tempo
+* lazy eval
 
 
 ## Numba
@@ -84,8 +90,8 @@ JIT compiler that translates a subset of Python and NumPy into fast machine code
 LLVM, via the llvmlite Python package.
 
 Perft speed in nodes/second:
-* Python:  _ __7 300 n/s 
-* Numba:   1 500 000 n/s 
+* Python: 7 300
+* Numba:  1 500 000
 
 
 ## Name

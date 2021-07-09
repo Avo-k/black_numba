@@ -90,6 +90,7 @@ def uci_perft(pos, depth):
     """fast compiled perft test"""
     moves = generate_moves(pos)
     total = 0
+    t = time.perf_counter()
     for m in moves:
         count = 0
         new_board = make_move(pos, m)
@@ -99,6 +100,7 @@ def uci_perft(pos, depth):
         total += count
         print(f"{get_move_uci(m)}: {count}")
     print("\nnodes searched:", total)
+    print(f"perft speed: {total / (time.perf_counter() - t):.3f} kn/s")
 
 
 def fast_iterative_perft(depth_max=5):
@@ -115,7 +117,7 @@ def fast_iterative_perft(depth_max=5):
             r = compiled_perft(position, depth)
             if depth > 2:
                 print("depth     time         Mn/s")
-                print(f"  {depth}        {round(time.time() - s, 3)}      {round(result / (time.time() - s) / 10**6, 2)}")
+                print(f"  {depth}        {time.time() - s:.3f}      {result / (time.time() - s) / 10**6:.2f}")
             assert r == result
 
 

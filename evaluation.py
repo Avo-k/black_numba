@@ -161,7 +161,8 @@ def king_eg(pos, sq, opp, color):
     return v
 
 
-@njit(nb.int64(Position.class_type.instance_type))
+# @njit(nb.int64(Position.class_type.instance_type, nb.b1))
+@njit
 def evaluate(pos, lazy=False) -> int:
     """return evaluation of a position from side-to-play perspective"""
     mg_score = 0

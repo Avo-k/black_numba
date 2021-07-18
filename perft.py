@@ -100,7 +100,7 @@ def uci_perft(pos, depth):
         total += count
         print(f"{get_move_uci(m)}: {count}")
     print("\nnodes searched:", total)
-    print(f"perft speed: {total / (time.perf_counter() - t):.3f} kn/s")
+    print(f"perft speed: {total / 1000 / (time.perf_counter() - t):.3f} kn/s")
 
 
 def fast_iterative_perft(depth_max=5):

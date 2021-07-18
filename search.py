@@ -331,18 +331,6 @@ def negamax(bot, pos, depth, alpha, beta):
 
         moves_searched += 1
 
-        # fail-hard beta cutoff
-        if score >= beta:
-
-            bot.write_hash_entry(pos, beta, depth, hash_flag_beta)
-
-            # if quiet move
-            if not get_move_capture(move):
-                bot.killer_moves[1][bot.ply] = bot.killer_moves[0][bot.ply]
-                bot.killer_moves[0][bot.ply] = move
-            # fail high
-            return beta
-
         if score > alpha:
 
             hash_flag = hash_flag_exact
@@ -359,6 +347,18 @@ def negamax(bot, pos, depth, alpha, beta):
                 bot.pv_table[bot.ply][next_ply] = bot.pv_table[bot.ply + 1][next_ply]
 
             bot.pv_length[bot.ply] = bot.pv_length[bot.ply + 1]
+
+            # fail-hard beta cutoff
+            if score >= beta:
+
+                bot.write_hash_entry(pos, beta, depth, hash_flag_beta)
+
+                # if quiet move
+                if not get_move_capture(move):
+                    bot.killer_moves[1][bot.ply] = bot.killer_moves[0][bot.ply]
+                    bot.killer_moves[0][bot.ply] = move
+                # fail high
+                return beta
 
     if legal_moves == 0:
         if in_check:  # checkmate
@@ -377,36 +377,39 @@ def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000, node_lim
 
     bot.reset_bot(time_limit=time_limit, node_limit=node_limit)
 
-    depth, score = 0, 0
+    depth, value = 0, 0
     alpha, beta = -BOUND_INF, BOUND_INF
 
     for depth in range(1, depth_limit + 1):
-        if bot.stopped or not -LOWER_MATE < score < LOWER_MATE:
+        if bot.stopped or not -LOWER_MATE < value < LOWER_MATE:
             break
         bot.follow_pv = True
 
-        score = negamax(bot, pos, depth, alpha, beta)
+        value = negamax(bot, pos, depth, alpha, beta)
 
-        if score <= alpha or score >= beta:
+        if value <= alpha or value >= beta:
             alpha, beta = -BOUND_INF, BOUND_INF
             continue
-        alpha, beta = score - 50, score + 50
+        alpha, beta = value - 50, value + 50
 
         if print_info:
             pv_line = " ".join([get_move_uci(bot.pv_table[0][c]) for c in range(bot.pv_length[0])])
             s_score = "mate"
-            if -UPPER_MATE < score < -LOWER_MATE:
-                score = -(score + UPPER_MATE) // 2
-            elif LOWER_MATE < score < UPPER_MATE:
-                score = (UPPER_MATE - score) // 2 + 1
+            if -UPPER_MATE < value < -LOWER_MATE:
+                score = -(value + UPPER_MATE) // 2
+            elif LOWER_MATE < value < UPPER_MATE:
+                score = (UPPER_MATE - value) // 2 + 1
             else:
                 s_score = "cp"
-            with nb.objmode(ms_spent=nb.float64):
-                ms_spent = time.time() * 1000 - bot.start
-            nps = int(bot.nodes / ms_spent * 1000)
+                score = value
 
-            print("info", "depth", depth, "score", s_score, score, "nodes", bot.nodes,
-                  "nps", nps, "time", int(ms_spent), "pv", pv_line)
+            print("info", "depth", depth, "score", s_score, int(score), "nodes", bot.nodes, "pv", pv_line)
+
+            # with nb.objmode(ms_spent=nb.float64):
+            #     ms_spent = time.time() * 1000 - bot.start
+            # nps = int(bot.nodes / ms_spent * 1000)
+            # print("info", "depth", depth, "score", s_score, score, "nodes", bot.nodes,
+            #       "nps", nps, "time", int(ms_spent), "pv", pv_line)
 
     # print(score == bot.read_hash_entry(pos, depth, alpha, beta))
     return depth, bot.pv_table[0][0], score

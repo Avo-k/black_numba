@@ -72,7 +72,7 @@ def queen_mg(pos, sq, kings_sq, opp):
 @njit
 def queen_eg(pos, sq, kings_sq, opp):
     v = 0
-    # mobility (-19 to 19)
+    # mobility (-38 to 38)
     moves = count_bits(get_queen_attacks(sq, pos.occupancy[both]))
     v += (moves - 5) * 2
     # Tropism
@@ -106,7 +106,7 @@ def rook_eg(pos, sq, kings_sq, opp, color):
         # Open file
         if not (pos.pieces[color][pawn] | pos.pieces[opp][pawn]) & file_masks[sq]:
             v += open_file_bonus
-    # Mobility (-28 to 28)
+    # Mobility (-56 to 56)
     moves = count_bits(get_rook_attacks(sq, pos.occupancy[both]))
     v += (moves - 6) * 4
     # Tropism
@@ -153,7 +153,7 @@ def king_mg(pos, sq, opp, color):
     return v
 
 
-@njit
+@njit(cache=True)
 def king_eg(pos, sq, opp, color):
     v = 0
     # Pawn shield

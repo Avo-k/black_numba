@@ -7,7 +7,6 @@ import threading
 
 from position import parse_fen, print_position
 from constants import start_position, stopped
-import constants
 from search import Black_numba, search, random_move
 from moves import get_move_uci, make_move, parse_move
 from bb_operations import count_bits
@@ -30,9 +29,11 @@ class Game:
         self.moves = ""
         self.bot = Black_numba()
         self.pos = parse_fen(start_position)
-        self.theory = False
+        self.theory = True
         self.book_moves = 0
         self.pcb = chess.Board()
+        self.total_nodes = 0
+        self.total_time = 0
 
     def run(self):
         # From Position
@@ -42,7 +43,7 @@ class Game:
             self.pos = parse_fen(fen)
             self.pcb.set_fen(fen)
             self.theory = False
-            if self.bot_is_white:
+            if self.bot_is_white != self.pos.side:
                 self.play(remaining_time=self.current_state['state'][self.time_str] // 1000)
 
         # Reconnect to a game
@@ -119,39 +120,46 @@ class Game:
 
     def play(self, remaining_time):
         move_list = self.moves.split()
+        start = time.perf_counter_ns()
+
         # Look in the books
         if self.theory:
             entry = self.look_in_da_book(move_list)
             if entry:
-                self.client.bots.make_move(game_id, entry.move)
-                print("still theory")
-                self.book_moves += 1
+                move = entry.move
+                time_spent_ms = (time.perf_counter_ns() - start) / 10 ** 6
+                print(f"info book move {self.book_moves}")
+                self.book_moves += 2
+            else:
+                self.theory = False
+                print("end of theory")
+                self.play(remaining_time)
                 return
-            self.theory = False
-            print("end of theory")
+
         # End-game table
         elif count_bits(self.pos.occupancy[2]) < 8:
-            print("Syzygy")
-            entry = self.syzygy(move_list)
-            print("dtm", entry['moves'][0]['dtm'])
+            entry = self.syzygy()
+            time_spent_ms = (time.perf_counter_ns() - start) / 10**6
+            print(f"info syzygy dtm {entry['moves'][0]['dtm']}")
+            print(entry['moves'][0])
             move = entry['moves'][0]['uci']
-            self.client.bots.make_move(game_id, move)
-            return
 
-        # time-management
-        # remaining_time = game_state[self.time_str].timestamp()
-        n_moves = min(10, len(move_list) - self.book_moves)
-        factor = 2 - n_moves / 10
-        target = remaining_time / 40 * 1000
+        else:
+            # time-management
+            n_moves = min(10, len(move_list) - self.book_moves)
+            factor = 2 - n_moves / 10
+            target = remaining_time / 40 * 1000
 
-        time_limit = round(factor * target)
+            time_limit = round(factor * target)
 
-        # look for a move
-        start = time.perf_counter_ns()
-        depth, move, score = search(self.bot, self.pos, print_info=True, time_limit=time_limit)
-        time_spent_ms = (time.perf_counter_ns() - start) / 10**6
+            # look for a move
+            depth, move, score = search(self.bot, self.pos, print_info=True, time_limit=time_limit)
+            time_spent_ms = (time.perf_counter_ns() - start) / 10**6
+            self.total_nodes += self.bot.nodes
+            self.total_time += time_spent_ms
 
         try:
+            print(f"{move = }")
             client.bots.make_move(self.game_id, get_move_uci(move))
         except berserk.exceptions.ResponseError as e:  # you flagged
             print(e)
@@ -167,9 +175,10 @@ class Game:
         board = chess.Board()
         for m in moves:
             board.push_uci(m)
-        return fruit.get(board)
+        if fruit.get(board):
+            return fruit.weighted_choice(board)
 
-    def syzygy(self, moves):
+    def syzygy(self):
         html_fen = self.pcb.fen().replace(" ", "_")
         response = requests.get(f"http://tablebase.lichess.ovh/standard?fen={html_fen}").json()
         return response
@@ -197,6 +206,8 @@ for event in client.bots.stream_incoming_events():
         game_id = event['game']['id']
         game = Game(client=client, game_id=game_id)
         game.run()
+        print(f"{game.total_nodes = }, {game.total_time = }")
+        print(f"speed: {game.total_nodes / game.total_time:.0f} nps")
         del game
 
     else:  # challengeDeclined, gameFinish, challengeCanceled

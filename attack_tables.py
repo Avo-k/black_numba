@@ -249,7 +249,6 @@ def init_sliders(attacks, bish):
         for index in range(occupancy_indices):
             if bish:  # bishop
                 occupancy = set_occupancy(index, relevant_bits_count, attack_mask)
-                n = occupancy * bishop_magic_numbers[sq] >> (64 - bishop_relevant_bits[sq])
                 magic_index = (occupancy * bishop_magic_numbers[sq]) >> (64 - bishop_relevant_bits[sq])
                 attacks[sq][magic_index] = bishop_attacks_on_the_fly(sq, occupancy)
 

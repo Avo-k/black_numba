@@ -3,19 +3,24 @@ from bb_operations import *
 from numba.experimental import jitclass
 
 position_spec = [
-    ('pieces', nb.uint64[:, :]),
-    ('occupancy', nb.uint64[:]),
-    ('side', nb.uint8),
-    ('enpas', nb.uint8),
-    ('castle', nb.uint8),
-    ('hash_key', nb.uint64)]
+    ("pieces", nb.uint64[:, :]),
+    ("occupancy", nb.uint64[:]),
+    ("side", nb.uint8),
+    ("enpas", nb.uint8),
+    ("castle", nb.uint8),
+    ("hash_key", nb.uint64),
+]
 
 
 @jitclass(position_spec)
 class Position:
     def __init__(self):
-        self.pieces = np.zeros((2, 6), dtype=np.uint64)  # bb for each color (2) and each piece type (6)
-        self.occupancy = np.zeros(3, dtype=np.uint64)  # Combined bitboards for (white, black, both)
+        self.pieces = np.zeros(
+            (2, 6), dtype=np.uint64
+        )  # bb for each color (2) and each piece type (6)
+        self.occupancy = np.zeros(
+            3, dtype=np.uint64
+        )  # Combined bitboards for (white, black, both)
         self.side = 0
         self.enpas = no_sq
         self.castle = 0
@@ -24,34 +29,33 @@ class Position:
 
 def print_position(pos, print_info=False):
     print("\n")
-    for rank in range(8):
-        r = " +---+---+---+---+---+---+---+---+\n |"
-        for file in range(8):
-            sq = np.uint8(rank * 8 + file)
-
+    for _rank in range(8):
+        line = " +---+---+---+---+---+---+---+---+\n |"
+        for _file in range(8):
+            sq = np.uint8(_rank * 8 + _file)
             for side in range(2):
                 if get_bit(pos.occupancy[side], sq):
                     for piece, bb in enumerate(pos.pieces[side]):
                         if get_bit(bb, sq):
-                            r += f" {piece_to_letter[side][piece]} |"
+                            line += f" {piece_to_letter[side][piece]} |"
                             break
                     break
-
             # empty square
             else:
-                r += "   |"
-
+                line += "   |"
         # assert len(r) == 25
-        r += f" {8 - rank}"
-        print(r)
+        line += f" {8 - rank}"
+        print(line)
     print(" +---+---+---+---+---+---+---+---+")
     print("   A   B   C   D   E   F   G   H\n")
 
     if print_info:
         print("white" if not pos.side else "black", "to move")
         print("en passant:", square_to_coordinates[pos.enpas])
-        casl = f"{'K' if pos.castle & wk else ''}{'Q' if pos.castle & wq else ''}" \
-               f"{'k' if pos.castle & bk else ''}{'q' if pos.castle & bq else ''} "
+        casl = (
+            f"{'K' if pos.castle & wk else ''}{'Q' if pos.castle & wq else ''}"
+            f"{'k' if pos.castle & bk else ''}{'q' if pos.castle & bq else ''} "
+        )
         print("Castling:", casl if casl else "-")
         print("Hash key:", hex(pos.hash_key), "\n")
 
@@ -96,7 +100,7 @@ def parse_fen(fen: str):
         num_str_to_int[str(num)] = num
 
     let_str_to_int = nb.typed.Dict.empty(nb.types.string, nb.types.int64)
-    for side in (('P', 'N', 'B', 'R', 'Q', 'K'), ('p', 'n', 'b', 'r', 'q', 'k')):
+    for side in (("P", "N", "B", "R", "Q", "K"), ("p", "n", "b", "r", "q", "k")):
         for code, letter in enumerate(side):
             let_str_to_int[letter] = code
 
@@ -115,7 +119,7 @@ def parse_fen(fen: str):
     pos.castle = 0
     for i, c in enumerate("KQkq"):
         if c in castle:
-            pos.castle += (2 ** i)
+            pos.castle += 2 ** i
 
     sq = 0
 

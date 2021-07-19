@@ -32,8 +32,6 @@ class Game:
         self.theory = True
         self.book_moves = 0
         self.pcb = chess.Board()
-        self.total_nodes = 0
-        self.total_time = 0
 
     def run(self):
         # From Position
@@ -89,6 +87,7 @@ class Game:
                             self.play(remaining_time=event[self.time_str].timestamp())
 
                         # else:
+                        #     self.ponder(remaining_time=event[self.time_str].timestamp())
                         #     print("opp turn")
                             # ponder_thread = threading.Thread(target=self.ponder)
                             # ponder_thread.start()
@@ -104,19 +103,16 @@ class Game:
         move = random_move(self.pos)
         client.bots.make_move(self.game_id, get_move_uci(move))
 
-    def ponder(self):
-        print("ponder")
-
+    def ponder(self, remaining_time):
         # set time limit
-        # remaining_time = game_state[self.time_str].timestamp()
-        # time_limit = remaining_time / 80 * 1000
+        time_limit = remaining_time / 80 * 1000
 
         start = time.perf_counter_ns()
-        depth, move, score = search(self.bot, self.pos, print_info=False, time_limit=30000)
+        depth, move, score = search(self.bot, self.pos, print_info=False, time_limit=time_limit)
         time_spent_ms = (time.perf_counter_ns() - start) / 10 ** 6
         print(f"pondering time:  {time_spent_ms:.0f}")
-        print(f"pondering depth: {depth} - kns: {self.bot.nodes / time_spent_ms:.0f}")
-        print("-" * 40)
+        # print(f"pondering depth: {depth} - kns: {self.bot.nodes / time_spent_ms:.0f}")
+        # print("-" * 40)
 
     def play(self, remaining_time):
         move_list = self.moves.split()
@@ -124,11 +120,11 @@ class Game:
 
         # Look in the books
         if self.theory:
-            entry = self.look_in_da_book(move_list)
+            entry = self.look_in_da_book()
             if entry:
                 move = entry.move
                 time_spent_ms = (time.perf_counter_ns() - start) / 10 ** 6
-                print(f"info book move {self.book_moves}")
+                print(f"info book weight {entry.weight}")
                 self.book_moves += 2
             else:
                 self.theory = False
@@ -139,28 +135,24 @@ class Game:
         # End-game table
         elif count_bits(self.pos.occupancy[2]) < 8:
             entry = self.syzygy()
+            move = entry['uci']
             time_spent_ms = (time.perf_counter_ns() - start) / 10**6
-            print(f"info syzygy dtm {entry['moves'][0]['dtm']}")
-            print(entry['moves'][0])
-            move = entry['moves'][0]['uci']
+            print(f"info syzygy wdl {entry['wdl']} dtm {entry['dtm']}")
 
         else:
             # time-management
             n_moves = min(10, len(move_list) - self.book_moves)
             factor = 2 - n_moves / 10
             target = remaining_time / 40 * 1000
-
             time_limit = round(factor * target)
 
             # look for a move
             depth, move, score = search(self.bot, self.pos, print_info=True, time_limit=time_limit)
+            move = get_move_uci(move)
             time_spent_ms = (time.perf_counter_ns() - start) / 10**6
-            self.total_nodes += self.bot.nodes
-            self.total_time += time_spent_ms
 
         try:
-            print(f"{move = }")
-            client.bots.make_move(self.game_id, get_move_uci(move))
+            client.bots.make_move(self.game_id, move)
         except berserk.exceptions.ResponseError as e:  # you flagged
             print(e)
             return
@@ -169,19 +161,15 @@ class Game:
         # print(f"time delta: {time_spent_ms - time_limit:.0f} ms")
         print("-" * 40)
 
-    @staticmethod
-    def look_in_da_book(moves):
+    def look_in_da_book(self):
         fruit = chess.polyglot.open_reader("book/book_small.bin")
-        board = chess.Board()
-        for m in moves:
-            board.push_uci(m)
-        if fruit.get(board):
-            return fruit.weighted_choice(board)
+        if fruit.get(self.pcb):
+            return fruit.weighted_choice(self.pcb)
 
     def syzygy(self):
         html_fen = self.pcb.fen().replace(" ", "_")
         response = requests.get(f"http://tablebase.lichess.ovh/standard?fen={html_fen}").json()
-        return response
+        return response['moves'][0]
 
 
 print("id name black_numba")
@@ -206,8 +194,6 @@ for event in client.bots.stream_incoming_events():
         game_id = event['game']['id']
         game = Game(client=client, game_id=game_id)
         game.run()
-        print(f"{game.total_nodes = }, {game.total_time = }")
-        print(f"speed: {game.total_nodes / game.total_time:.0f} nps")
         del game
 
     else:  # challengeDeclined, gameFinish, challengeCanceled

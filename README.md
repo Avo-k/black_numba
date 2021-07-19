@@ -31,7 +31,8 @@ A position object is composed of:
 
 ### Bitboards
 
-A bitboard is a way to represent a chess board, with a 64-bit unsigned 
+A [bitboard](https://www.chessprogramming.org/Bitboard_Board-Definition)
+is a way to represent a chess board, with a 64-bit unsigned 
 integer representing occupied squares with 1 and empty squares with 0.
 
 A position object stores 12 piece bitboards, 1 for each chess piece 
@@ -59,15 +60,16 @@ and in a clearer form with coordinates and zeros as dots readability:
 ### Side to move
 
 The side to move is 0 (white) or 1 (black). 
-This method allows to use to easily switch side using the bitwise XOR operator:
+This method allows to easily switch to opponent side using the bitwise XOR operator:
 
 e.g. side ^= 1
 
 ### En passant square
 
 En passant square is stored as an integer. Squares are refered as numbers from 0 to 63
-(no_square is 64) using the big-endian rank-file mapping, which means we see the board
-from top left to bottom right, illustration below:
+(no_square is 64) using the 
+[big-endian rank-file mapping](https://www.chessprogramming.org/Big-endian), 
+which means we see the board from top left to bottom right, illustration below:
 
    ```
 0  1  2  3  4  5  6  7          A8 B8 C8 D8 E8 F8 G8 H8
@@ -91,12 +93,14 @@ illustration by Code Monkey King:
    0010    2  white king can castle to the queen side
    0100    4  black king can castle to the king side
    1000    8  black king can castle to the queen side
-   
-      examples
-   1111       both sides an castle both directions
-   1001       black king => queen side
-              white king => king side
    ```
+
+### Hash key
+
+The hash key is a 64-bit number which will be used as a unique key to store the position
+in the hash table alias [transposition table](https://www.chessprogramming.org/Transposition_Table).
+
+
 
 ## Search
 ### Iterative deepening

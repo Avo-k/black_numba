@@ -57,6 +57,10 @@ and in a clearer form with coordinates and zeros as dots readability:
    A  B  C  D  E  F  G  H
    ```
 
+and the same goes for the 12 others types of pieces:
+
+![alt text](https://github.com/Avo-k/black_numba/blob/master/logo/pieces_bitboard.gif?raw=true)
+
 ### Side to move
 
 The side to move is 0 (white) or 1 (black). 
@@ -99,8 +103,6 @@ illustration by Code Monkey King:
 
 The hash key is a 64-bit number which will be used as a unique key to store the position
 in the hash table alias [transposition table](https://www.chessprogramming.org/Transposition_Table).
-
-
 
 ## Search
 ### Iterative deepening

@@ -61,12 +61,13 @@ and the same goes for the 12 others types of pieces:
 
 ![alt text](https://github.com/Avo-k/black_numba/blob/master/logo/pieces_bitboard.gif?raw=true)
 
+credit: CPW
+
 ### Side to move
 
 The side to move is 0 (white) or 1 (black). 
 This method allows to easily switch to opponent side using the bitwise XOR operator:
-
-e.g. side ^= 1
+`side ^= 1`
 
 ### En passant square
 
@@ -104,7 +105,41 @@ illustration by Code Monkey King:
 The hash key is a 64-bit number which will be used as a unique key to store the position
 in the hash table alias [transposition table](https://www.chessprogramming.org/Transposition_Table).
 
+First we initialize random arrays for all pieces on all squares, each squares (for en passant), 
+each castle rights combinations, and for the side to move.
+
+Then we simply XOR the corresponding key to each change with the current hash key of the position,
+for example when we switch sides:
+   `position.hash_key ^= side_key`
+
+
+
 ## Search
+
+In order to search the best move in a given chess position, engines have to explore
+the tree representing all legal moves at the highest depth possible.
+
+A few number to explain why we have to use tricks to "prune" branches of this tree to
+reduce the number of nodes (board position) to explore.
+
+When starting a game, white player has 20 legal moves possible
+
+
+### Negamax search
+
+The negamax search is a simple way to explore the tree representing all the possible moves
+in a game of chess. In simple words we will explore all the moves to a given depth using a
+Depth First Search algorithm and evaluating the position when reaching a leaf.
+We try guessing which path is the most likely by stating both player:
+* wants to maximize their score
+* can see at the same depth
+
+[Step-by-step illustration of the negamax algorithm](https://en.wikipedia.org/wiki/Negamax#/media/File:Plain_Negamax.gif)
+
+
+#### Alpha-Beta pruning
+
+
 ### Iterative deepening
 * Negamax search
   * Alpha-Beta pruning

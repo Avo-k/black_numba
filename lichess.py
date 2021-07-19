@@ -70,6 +70,7 @@ class Game:
                         self.moves = event['moves']
                         self.pos = make_move(self.pos, parse_move(self.pos, s_move))
                         self.pcb.push_uci(s_move)
+                        remaining_time = event[self.time_str].timestamp()
                         bot_turn = self.bot_is_white != self.pos.side
 
                         if bot_turn:
@@ -84,9 +85,11 @@ class Game:
                             #     print(f"killed in {(time.perf_counter_ns() - s) / 10**6:.0f} ms")
                             #     constants.stopped = False
                             #     assert threading.active_count() == 1
-                            self.play(remaining_time=event[self.time_str].timestamp())
+                            self.play(remaining_time=remaining_time)
 
-                        # else:
+                        else:
+                            if self.theory:
+                                self.ponder(remaining_time=remaining_time)
                         #     self.ponder(remaining_time=event[self.time_str].timestamp())
                         #     print("opp turn")
                             # ponder_thread = threading.Thread(target=self.ponder)
@@ -108,7 +111,7 @@ class Game:
         time_limit = remaining_time / 80 * 1000
 
         start = time.perf_counter_ns()
-        depth, move, score = search(self.bot, self.pos, print_info=False, time_limit=time_limit)
+        depth, move, score = search(self.bot, self.pos, print_info=False, time_limit=time_limit, depth_limit=5)
         time_spent_ms = (time.perf_counter_ns() - start) / 10 ** 6
         print(f"pondering time:  {time_spent_ms:.0f}")
         # print(f"pondering depth: {depth} - kns: {self.bot.nodes / time_spent_ms:.0f}")

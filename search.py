@@ -107,11 +107,8 @@ class Black_numba:
         return False
 
     def communicate(self):
-        with nb.objmode(spent=nb.uint16):
-            spent = time.time() * 1000 - self.start
-            # if constants.stopped:
-            #     print("stopped")
-            #     self.stopped = True
+        with nb.objmode(spent=nb.uint64):
+            spent = time.perf_counter() * 1000 - self.start
         if spent > self.time_limit or self.nodes > self.node_limit:
             self.stopped = True
 

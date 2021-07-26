@@ -180,34 +180,38 @@ file_masks, rank_masks, isolated_masks, white_passed_masks, black_passed_masks =
     np.zeros(64, dtype=np.uint64) for _ in range(5)
 )
 
-pointer = 0
-for i_rank, rank in enumerate(RANKS):
-    for i_file, file in enumerate(FILES):
-        rank_masks[pointer] = rank
-        file_masks[pointer] = file
 
-        if i_file == 0:  # A file
-            isolated_masks[pointer] = fileB
-            white_passed_masks[pointer] = fileA | fileB
-            black_passed_masks[pointer] = fileA | fileB
+def init_masks():
+    pointer = 0
+    for i_rank, rank in enumerate(RANKS):
+        for i_file, file in enumerate(FILES):
+            rank_masks[pointer] = rank
+            file_masks[pointer] = file
 
-        elif i_file == 7:  # H file
-            isolated_masks[pointer] = fileG
-            white_passed_masks[pointer] = fileG | fileH
-            black_passed_masks[pointer] = fileG | fileH
+            if i_file == 0:  # A file
+                isolated_masks[pointer] = fileB
+                white_passed_masks[pointer] = fileA | fileB
+                black_passed_masks[pointer] = fileA | fileB
 
-        else:
-            isolated_masks[pointer] = FILES[i_file - 1] | FILES[i_file + 1]
-            white_passed_masks[pointer] = FILES[i_file - 1] | file | FILES[i_file + 1]
-            black_passed_masks[pointer] = FILES[i_file - 1] | file | FILES[i_file + 1]
+            elif i_file == 7:  # H file
+                isolated_masks[pointer] = fileG
+                white_passed_masks[pointer] = fileG | fileH
+                black_passed_masks[pointer] = fileG | fileH
 
-        for r in RANKS[: i_rank + 1]:
-            black_passed_masks[pointer] &= ~r
-        for r in RANKS[i_rank:]:
-            white_passed_masks[pointer] &= ~r
+            else:
+                isolated_masks[pointer] = FILES[i_file - 1] | FILES[i_file + 1]
+                white_passed_masks[pointer] = FILES[i_file - 1] | file | FILES[i_file + 1]
+                black_passed_masks[pointer] = FILES[i_file - 1] | file | FILES[i_file + 1]
 
-        pointer += 1
-del pointer
+            for r in RANKS[: i_rank + 1]:
+                black_passed_masks[pointer] &= ~r
+            for r in RANKS[i_rank:]:
+                white_passed_masks[pointer] &= ~r
+
+            pointer += 1
+
+
+init_masks()
 
 double_pawn_penalty = -20
 isolated_pawn_penalty = -10

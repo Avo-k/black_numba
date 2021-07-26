@@ -103,7 +103,7 @@ def uci_perft(pos, depth):
     print(f"perft speed: {total / 1000 / (time.perf_counter() - t):.3f} kn/s")
 
 
-def fast_iterative_perft(depth_max=5):
+def fast_iterative_perft(depth_max=4):
     for i, (pos, t) in enumerate(positions.items(), 1):
         print("-" * 30)
         print(" " * 8, "POSITION", i)

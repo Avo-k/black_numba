@@ -108,14 +108,11 @@ class Game:
 
     def ponder(self, remaining_time):
         # set time limit
-        time_limit = remaining_time / 80 * 1000
-
+        time_limit = 500
         start = time.perf_counter_ns()
-        depth, move, score = search(self.bot, self.pos, print_info=False, time_limit=time_limit, depth_limit=5)
+        search(self.bot, self.pos, print_info=False, time_limit=time_limit, depth_limit=8)
         time_spent_ms = (time.perf_counter_ns() - start) / 10 ** 6
         print(f"pondering time:  {time_spent_ms:.0f}")
-        # print(f"pondering depth: {depth} - kns: {self.bot.nodes / time_spent_ms:.0f}")
-        # print("-" * 40)
 
     def play(self, remaining_time):
         move_list = self.moves.split()

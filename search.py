@@ -108,7 +108,7 @@ class Black_numba:
 
     def communicate(self):
         with nb.objmode(spent=nb.uint64):
-            spent = time.perf_counter() * 1000 - self.start
+            spent = time.time() * 1000 - self.start
         if spent > self.time_limit or self.nodes > self.node_limit:
             self.stopped = True
 
@@ -370,7 +370,7 @@ def negamax(bot, pos, depth, alpha, beta):
 
 @njit
 def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000, node_limit=10**7):
-    """yield depth searched, best move, score (cp)"""
+    """return depth searched, best move, score (cp)"""
 
     bot.reset_bot(time_limit=time_limit, node_limit=node_limit)
 
@@ -389,7 +389,7 @@ def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000, node_lim
             continue
         alpha, beta = value - 50, value + 50
 
-        if print_info:
+        if print_info and bot.pv_table[0][0]:
             pv_line = " ".join([get_move_uci(bot.pv_table[0][c]) for c in range(bot.pv_length[0])])
             s_score = "mate"
             if -UPPER_MATE < value < -LOWER_MATE:
@@ -409,4 +409,4 @@ def search(bot, pos, print_info=False, depth_limit=32, time_limit=1000, node_lim
             #       "nps", nps, "time", int(ms_spent), "pv", pv_line)
 
     # print(score == bot.read_hash_entry(pos, depth, alpha, beta))
-    return depth, bot.pv_table[0][0], score
+    return depth, bot.pv_table[0][0], value

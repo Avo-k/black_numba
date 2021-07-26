@@ -96,7 +96,7 @@ def main():
 
         elif msg == "uci":
             print("id name black_numba")
-            print("id name Avo-k")
+            print("id author Avo-k")
             print("uciok")
 
         elif msg == "isready":
@@ -123,5 +123,4 @@ if __name__ == "__main__":
     compiling_time = time.perf_counter()
     search(Black_numba(), parse_fen(start_position), print_info=False, depth_limit=2)
     print(f"compiled in {time.perf_counter() - compiling_time:.2f} seconds")
-
     main()

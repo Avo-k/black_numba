@@ -421,14 +421,6 @@ def make_move(pos_orig, move, only_captures=False):
         pos.side = opp
         pos.hash_key ^= side_key
 
-        # # debug hash incremental
-        # from_scratch = generate_hash_key(pos)
-        #
-        # if pos.hash_key != from_scratch:
-        #     print(get_move_uci(move))
-        #     print("hash key:   ", pos.hash_key)
-        #     print("should be:  ", from_scratch)
-
         if not is_square_attacked(pos, get_ls1b_index(pos.pieces[side][king]), opp):
             return pos
 

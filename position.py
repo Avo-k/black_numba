@@ -28,26 +28,26 @@ class Position:
 
 
 def print_position(pos, print_info=False):
-    print("\n")
+    b = "\n"
     for _rank in range(8):
-        line = " +---+---+---+---+---+---+---+---+\n |"
+        b += " +---+---+---+---+---+---+---+---+\n |"
         for _file in range(8):
             sq = np.uint8(_rank * 8 + _file)
-            for side in range(2):
-                if get_bit(pos.occupancy[side], sq):
-                    for piece, bb in enumerate(pos.pieces[side]):
+            for _side in range(2):
+                if get_bit(pos.occupancy[_side], sq):
+                    for piece, bb in enumerate(pos.pieces[_side]):
                         if get_bit(bb, sq):
-                            line += f" {piece_to_letter[side][piece]} |"
+                            b += f" {piece_to_letter[_side][piece]} |"
                             break
                     break
             # empty square
             else:
-                line += "   |"
+                b += "   |"
         # assert len(r) == 25
-        line += f" {8 - rank}"
-        print(line)
-    print(" +---+---+---+---+---+---+---+---+")
-    print("   A   B   C   D   E   F   G   H\n")
+        b += f" {8 - _rank}\n"
+    b += " +---+---+---+---+---+---+---+---+\n"
+    b += "   A   B   C   D   E   F   G   H\n"
+    print(b)
 
     if print_info:
         print("white" if not pos.side else "black", "to move")

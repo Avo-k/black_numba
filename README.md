@@ -1,7 +1,5 @@
 # black_numba
 
-**Project still in development**
-
 Far from my first chess engine [Skormfish](https://github.com/Avo-k/skormfish) 
 written in a clear pythonic style, black_numba is a Numba-enhanced bitboard
 chess engine written with performance in mind.
@@ -44,7 +42,7 @@ e.g., the white pawn bitboard at the beginning of a game will be:
 * in decimal: `71776119061217280`
 * in binary: `0b11111111000000000000000000000000000000000000000000000000`
 
-and in a clearer form with coordinates and zeros as dots readability:
+and in a clearer form with coordinates and zeros as dots for readability:
 ```
 8  ·  ·  ·  ·  ·  ·  ·  ·
 7  ·  ·  ·  ·  ·  ·  ·  ·
@@ -91,7 +89,6 @@ which means we see the board from top left to bottom right, illustration below:
 
 4 bits are used to represent casteling rights and are printed as in a fen representation `KQkq`
 
-illustration by Code Monkey King:
    ```
     bin  dec
    0001    1  white king can castle to the king side
@@ -100,15 +97,15 @@ illustration by Code Monkey King:
    1000    8  black king can castle to the queen side
    ```
 
-### Hash key
+### Hash key (zobrist hashing)
 
-The hash key is a 64-bit number which will be used as a unique key to store the position
+The hash key is a 64-bit integer which will be used as a unique key to store the position
 in the hash table alias [transposition table](https://www.chessprogramming.org/Transposition_Table).
 
 First we initialize random arrays for all pieces on all squares, each squares (for en passant), 
 each castle rights combinations, and for the side to move.
 
-Then we simply XOR the corresponding key to each change with the current hash key of the position,
+Then we simply XOR the corresponding key with each change with the current hash key of the position,
 for example when we switch sides:
    `position.hash_key ^= side_key`
 
@@ -116,14 +113,30 @@ for example when we switch sides:
 
 ## Search
 
-In order to search the best move in a given chess position, engines have to explore
-the tree representing all legal moves at the highest depth possible.
+In order to search the best move in a given chess position, traditionnal chess
+engines  like Stockfish or black_numba have to explore the tree representing 
+all legal moves at the highest depth possible, this is called [depth first search](https://www.chessprogramming.org/Depth-First).
 
-A few number to explain why we have to use tricks to "prune" branches of this tree to
-reduce the number of nodes (board position) to explore.
+### Chess' tree span
 
-When starting a game, white player has 20 legal moves possible
+When playing chess, the colossal number of moves and games possible forces us to find lots of tricks 
+to reduce, the number of nodes (game state) we will explore. Otherwise we would be stuck at very low depth.
+A few numbers to give you a better idea of why we have to use tricks to "prune off" branches of this tree to
+reduce the number of nodes (board position) to explore:
 
+When starting a game, white player has to choose between 20 legal moves. Moving each pawn
+1 or 2 squares or one of their knights. Black has the same range of choice and it's white
+to play again. We say we are turn 1, or 2 plies into the game, or depth 2. And already,
+their are could be 400 unique possible positions on the board, of course the number grows
+faster each time and will be mutliplied each ply, or depth, by the number of legal move 
+available.
+
+`10**120` is [The Shannon number](https://en.wikipedia.org/wiki/Shannon_number), 
+a well known number respresenting the game-tree complexity of chess, what most 
+people don't know is that it is the lower bound of the estimation, made in 1950
+by the American mathematician Claude Shannon. One way to begin to grasp the absurdity 
+of this number is to compare it to the number of ATOMS in our observable universe, 
+which is "only" `10**80`.
 
 ### Negamax search
 

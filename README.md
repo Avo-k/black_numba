@@ -114,7 +114,7 @@ for example when we switch sides:
 ## Search
 
 In order to search the best move in a given chess position, traditionnal chess
-engines  like Stockfish or black_numba have to explore the tree representing 
+engines like Stockfish or black_numba have to explore the tree representing 
 all legal moves at the highest depth possible, this is called [depth first search](https://www.chessprogramming.org/Depth-First).
 
 ### Chess' tree span
@@ -127,12 +127,12 @@ reduce the number of nodes (board position) to explore:
 When starting a game, white player has to choose between 20 legal moves. Moving each pawn
 1 or 2 squares or one of their knights. Black has the same range of choice and it's white
 to play again. We say we are turn 1, or 2 plies into the game, or depth 2. And already,
-their are could be 400 unique possible positions on the board, of course the number grows
-faster each time and will be mutliplied each ply, or depth, by the number of legal move 
-available.
+there could be 400 unique possible positions on the board, of course the number of possible 
+unique leafs grows faster each time and will be multiplied at each ply by the number of
+legal move available.
 
 `10**120` is [The Shannon number](https://en.wikipedia.org/wiki/Shannon_number), 
-a well known number respresenting the game-tree complexity of chess, what most 
+a well known number representing the game-tree complexity of chess, what most 
 people don't know is that it is the lower bound of the estimation, made in 1950
 by the American mathematician Claude Shannon. One way to begin to grasp the absurdity 
 of this number is to compare it to the number of ATOMS in our observable universe, 
@@ -140,9 +140,10 @@ which is "only" `10**80`.
 
 ### Negamax search
 
-The negamax search is a simple way to explore the tree representing all the possible moves
-in a game of chess. In simple words we will explore all the moves to a given depth using a
-Depth First Search algorithm and evaluating the position when reaching a leaf.
+The negamax search is a simple way to explore the tree representing all the possible continuation
+of a chess game. In simple words we will explore all the legal moves available to a given depth
+using a Depth First Search algorithm and evaluating the position thanks to the evaluation function
+when reaching a leaf.
 We try guessing which path is the most likely by stating both player:
 * wants to maximize their score
 * can see at the same depth

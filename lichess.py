@@ -108,7 +108,7 @@ class Game:
 
     def ponder(self, remaining_time):
         # set time limit
-        time_limit = 500
+        time_limit = 800
         start = time.perf_counter_ns()
         search(self.bot, self.pos, print_info=False, time_limit=time_limit, depth_limit=8)
         time_spent_ms = (time.perf_counter_ns() - start) / 10 ** 6

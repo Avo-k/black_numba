@@ -102,8 +102,8 @@ which means we see the board from top left to bottom right, illustration below:
 The hash key is a 64-bit integer which will be used as a unique key to store the position
 in the hash table alias [transposition table](https://www.chessprogramming.org/Transposition_Table).
 
-First we initialize random arrays for all pieces on all squares, each squares (for en passant), 
-each castle rights combinations, and for the side to move.
+First we initialize some random integer for all pieces on all squares, every square 
+(for en-passant moves), for each castle-right combination, and for the side to move.
 
 Then we simply XOR the corresponding key with each change with the current hash key of the position,
 for example when we switch sides:

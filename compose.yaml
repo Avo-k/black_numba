@@ -1,0 +1,18 @@
+services:
+  black-numba:
+    build: .
+    image: black-numba:latest
+    container_name: black-numba
+    restart: unless-stopped
+    environment:
+      # Either set LICHESS_API_TOKEN here directly, or keep this empty and
+      # mount api_token.txt below.
+      LICHESS_API_TOKEN: ${LICHESS_API_TOKEN:-}
+      # Path inside the container where the polyglot opening book is read.
+      BLACK_NUMBA_BOOK: /data/book/Daring.bin
+    volumes:
+      # Optional: mount a polyglot opening book. The bot runs fine without it.
+      - ./book:/data/book:ro
+      # Optional: pass the token via file instead of env var.
+      # - ./api_token.txt:/app/api_token.txt:ro
+    stop_grace_period: 5s

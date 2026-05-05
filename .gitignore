@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+
+# Virtual envs
+.venv/
+venv/
+
+# Numba AOT/cache
+__pycache__/
+*.nbi
+*.nbc
+
+# Project secrets / data
+api_token.txt
+.env
+.env.*
+book/
+
+# Editor
+.idea/
+.vscode/
+.claude/
+*.swp
+.DS_Store

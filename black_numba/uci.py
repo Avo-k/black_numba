@@ -1,11 +1,11 @@
 import sys
 import time
 
-from position import parse_fen, print_position
-from constants import start_position
-from moves import make_move, parse_move, get_move_uci
-from search import Black_numba, random_move, search
-from perft import uci_perft
+from .position import parse_fen, print_position
+from .constants import start_position
+from .moves import make_move, parse_move, get_move_uci
+from .search import Black_numba, random_move, search
+from .perft import uci_perft
 
 
 class Game:
@@ -85,6 +85,11 @@ def main():
     This implements a slice of the UCI protocol.
     """
 
+    print("compiling...")
+    compiling_time = time.perf_counter()
+    search(Black_numba(), parse_fen(start_position), print_info=False, depth_limit=2)
+    print(f"compiled in {time.perf_counter() - compiling_time:.2f} seconds")
+
     game = Game()
 
     while True:
@@ -119,8 +124,4 @@ def main():
 
 
 if __name__ == "__main__":
-    print("compiling...")
-    compiling_time = time.perf_counter()
-    search(Black_numba(), parse_fen(start_position), print_info=False, depth_limit=2)
-    print(f"compiled in {time.perf_counter() - compiling_time:.2f} seconds")
     main()

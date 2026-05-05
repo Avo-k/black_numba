@@ -2,9 +2,9 @@ import time
 import chess
 import sys
 
-from constants import *
-from position import parse_fen
-from moves import generate_moves, make_move, generate_legal_moves, get_move_uci
+from .constants import *
+from .position import parse_fen
+from .moves import generate_moves, make_move, generate_legal_moves, get_move_uci
 
 
 positions = nb.typed.Dict.empty(key_type=nb.types.string, value_type=nb.types.uint64[:])

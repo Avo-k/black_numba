@@ -1,9 +1,9 @@
 import sys
 
-from attack_tables import is_square_attacked, get_attacks, pawn_attacks
-from constants import *
-from bb_operations import *
-from position import Position, generate_hash_key
+from .attack_tables import is_square_attacked, get_attacks, pawn_attacks
+from .constants import *
+from .bb_operations import *
+from .position import Position, generate_hash_key
 
 """
            Binary move bits             Meaning          Hexadecimal

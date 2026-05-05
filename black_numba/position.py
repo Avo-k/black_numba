@@ -1,5 +1,5 @@
-from constants import *
-from bb_operations import *
+from .constants import *
+from .bb_operations import *
 from numba.experimental import jitclass
 
 position_spec = [

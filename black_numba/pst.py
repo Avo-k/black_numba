@@ -1,4 +1,4 @@
-from constants import np, njit, \
+from .constants import np, njit, \
     opening, end_game, pawn, knight, bishop, rook, queen, king, a8, h8, d5, e5, d4, e4, d3, e3, a1, h1
 
 PawnFileOpening = 5

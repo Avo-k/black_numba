@@ -1,21 +1,34 @@
+import os
 import berserk
 import time
 import chess.polyglot
 import requests
 import sys
 import threading
+from pathlib import Path
 
-from position import parse_fen, print_position
-from constants import start_position, stopped
-from search import Black_numba, search, random_move
-from moves import get_move_uci, make_move, parse_move
-from bb_operations import count_bits
+from .position import parse_fen, print_position
+from .constants import start_position, stopped
+from .search import Black_numba, search, random_move
+from .moves import get_move_uci, make_move, parse_move
+from .bb_operations import count_bits
 
-API_TOKEN = open("api_token.txt").read()
 bot_id = 'black_numba'
 
-session = berserk.TokenSession(API_TOKEN)
-client = berserk.Client(session=session)
+
+def load_api_token() -> str:
+    token = os.environ.get("LICHESS_API_TOKEN")
+    if token:
+        return token.strip()
+    token_file = Path(os.environ.get("LICHESS_TOKEN_FILE", "api_token.txt"))
+    if token_file.is_file():
+        return token_file.read_text().strip()
+    sys.exit(
+        "no Lichess API token found: set LICHESS_API_TOKEN or place a token in api_token.txt"
+    )
+
+
+client = None  # initialised in main()
 
 
 class Game:
@@ -70,7 +83,7 @@ class Game:
                         self.moves = event['moves']
                         self.pos = make_move(self.pos, parse_move(self.pos, s_move))
                         self.pcb.push_uci(s_move)
-                        remaining_time = event[self.time_str].timestamp()
+                        remaining_time = event[self.time_str].total_seconds()
                         bot_turn = self.bot_is_white != self.pos.side
 
                         if bot_turn:
@@ -104,7 +117,7 @@ class Game:
 
     def play_random_fast(self):
         move = random_move(self.pos)
-        client.bots.make_move(self.game_id, get_move_uci(move))
+        self.client.bots.make_move(self.game_id, get_move_uci(move))
 
     def ponder(self, remaining_time):
         # set time limit
@@ -152,7 +165,7 @@ class Game:
             time_spent_ms = (time.perf_counter_ns() - start) / 10**6
 
         try:
-            client.bots.make_move(self.game_id, move)
+            self.client.bots.make_move(self.game_id, move)
         except berserk.exceptions.ResponseError as e:  # you flagged
             print(e)
             return
@@ -162,9 +175,13 @@ class Game:
         print("-" * 40)
 
     def look_in_da_book(self):
-        fruit = chess.polyglot.open_reader("book/book_small.bin")
-        if fruit.get(self.pcb):
-            return fruit.weighted_choice(self.pcb)
+        book_path = Path(os.environ.get("BLACK_NUMBA_BOOK", "book/Daring.bin"))
+        if not book_path.is_file():
+            return None
+        with chess.polyglot.open_reader(book_path) as fruit:
+            if fruit.get(self.pcb):
+                return fruit.weighted_choice(self.pcb)
+        return None
 
     def syzygy(self):
         html_fen = self.pcb.fen().replace(" ", "_")
@@ -172,29 +189,39 @@ class Game:
         return response['moves'][0]
 
 
-print("id name black_numba")
-print("id author Avo-k")
-print("compiling...")
-compiling_time = time.time()
-search(Black_numba(), parse_fen(start_position), print_info=False, depth_limit=2)
-print(f"compiled in {time.time() - compiling_time:.2f} seconds")
+def main():
+    global client
+    api_token = load_api_token()
+    session = berserk.TokenSession(api_token)
+    client = berserk.Client(session=session)
 
-for event in client.bots.stream_incoming_events():
-    if event['type'] == 'challenge':
-        challenge = event['challenge']
-        if challenge['speed'] in ('bullet', 'blitz', 'rapid', 'classic'):
-            if challenge['variant']['short'] in ("Std", "FEN"):
-                client.bots.accept_challenge(challenge['id'])
-                print('challenge accepted!')
-        else:
-            client.bots.decline_challenge(challenge['id'])
+    print("id name black_numba")
+    print("id author Avo-k")
+    print("compiling...")
+    compiling_time = time.time()
+    search(Black_numba(), parse_fen(start_position), print_info=False, depth_limit=2)
+    print(f"compiled in {time.time() - compiling_time:.2f} seconds")
 
-    elif event['type'] == 'gameStart':
-        print(event['type'])
-        game_id = event['game']['id']
-        game = Game(client=client, game_id=game_id)
-        game.run()
-        del game
+    for event in client.bots.stream_incoming_events():
+        if event['type'] == 'challenge':
+            challenge = event['challenge']
+            if challenge['speed'] in ('bullet', 'blitz', 'rapid', 'classic'):
+                if challenge['variant']['short'] in ("Std", "FEN"):
+                    client.bots.accept_challenge(challenge['id'])
+                    print('challenge accepted!')
+            else:
+                client.bots.decline_challenge(challenge['id'])
 
-    else:  # challengeDeclined, gameFinish, challengeCanceled
-        print(event['type'])
+        elif event['type'] == 'gameStart':
+            print(event['type'])
+            game_id = event['game']['id']
+            game = Game(client=client, game_id=game_id)
+            game.run()
+            del game
+
+        else:  # challengeDeclined, gameFinish, challengeCanceled
+            print(event['type'])
+
+
+if __name__ == "__main__":
+    main()

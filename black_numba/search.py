@@ -1,10 +1,10 @@
 import time
 
-from constants import *
-import constants
-from moves import *
-from bb_operations import get_ls1b_index
-from evaluation import evaluate, get_game_phase_score
+from .constants import *
+from . import constants
+from .moves import *
+from .bb_operations import get_ls1b_index
+from .evaluation import evaluate, get_game_phase_score
 
 
 def random_move(pos) -> int:

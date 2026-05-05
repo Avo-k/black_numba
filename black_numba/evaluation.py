@@ -1,8 +1,8 @@
-from constants import *
-from bb_operations import *
-from position import Position
-from attack_tables import get_bishop_attacks, get_queen_attacks, king_attacks, knight_attacks, get_rook_attacks
-from pst import PST
+from .constants import *
+from .bb_operations import *
+from .position import Position
+from .attack_tables import get_bishop_attacks, get_queen_attacks, king_attacks, knight_attacks, get_rook_attacks
+from .pst import PST
 
 
 @njit(nb.uint16(Position.class_type.instance_type), cache=True)

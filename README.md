@@ -89,9 +89,10 @@ move after a (re)start, it spends ~30 s JIT-compiling — challenges that arrive
 during that window queue up on the Lichess side and play normally as soon as
 warmup finishes.
 
-Optional: drop a polyglot opening book at `./book/Daring.bin` — the host
-path is bind-mounted read-only into the container at `/data/book/`. The bot
-runs fine without one and will simply skip the opening-theory phase.
+Two polyglot opening books (`Daring.bin`, `Variety.bin`) are bundled with the
+image at `/app/book/`. The bot defaults to `Daring.bin`; set
+`BLACK_NUMBA_BOOK=book/Variety.bin` (or mount your own book and point the env
+var at it) to switch.
 
 ## Board state using bitboards
 

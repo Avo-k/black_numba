@@ -17,7 +17,6 @@ __pycache__/
 api_token.txt
 .env
 .env.*
-book/
 
 # Editor
 .idea/

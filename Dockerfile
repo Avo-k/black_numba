@@ -18,6 +18,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Now copy the actual sources and install the project itself.
 COPY README.md ./
 COPY black_numba ./black_numba
+COPY book ./book
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 

@@ -8,11 +8,7 @@ services:
       # Either set LICHESS_API_TOKEN here directly, or keep this empty and
       # mount api_token.txt below.
       LICHESS_API_TOKEN: ${LICHESS_API_TOKEN:-}
-      # Path inside the container where the polyglot opening book is read.
-      BLACK_NUMBA_BOOK: /data/book/Daring.bin
-    volumes:
-      # Optional: mount a polyglot opening book. The bot runs fine without it.
-      - ./book:/data/book:ro
-      # Optional: pass the token via file instead of env var.
-      # - ./api_token.txt:/app/api_token.txt:ro
+    # The polyglot opening book ships with the image at /app/book/Daring.bin
+    # (the default for BLACK_NUMBA_BOOK). Override the env var if you want a
+    # different book and mount it via a volume.
     stop_grace_period: 5s

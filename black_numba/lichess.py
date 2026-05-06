@@ -150,7 +150,7 @@ class Game:
             entry = self.syzygy()
             move = entry['uci']
             time_spent_ms = (time.perf_counter_ns() - start) / 10**6
-            print(f"info syzygy wdl {entry['wdl']} dtm {entry['dtm']}")
+            print(f"info syzygy category {entry.get('category', '?')} dtm {entry.get('dtm', '?')}")
 
         else:
             # time-management

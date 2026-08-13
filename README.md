@@ -36,6 +36,22 @@ uv run python -m black_numba.perft
 Plug `uv run black-numba-uci` into any UCI-compatible GUI (Cute Chess, Arena,
 Banksia, lichess-bot, …) as the engine command and you're good to go.
 
+> **⚠️ First-run compilation & GUI timeouts**
+> Numba JIT-compiles the engine's hot path on its very first execution. This
+> one-shot warmup can take 10–30 s (up to ~100 s on some systems). During this
+> time the engine prints `compiling...` and is unresponsive to UCI commands,
+> which may cause GUIs like CuteChess to report *"Chess protocol was not
+> started in time"*.
+>
+> **Fix:** Simply run `uv run black-numba-uci` (or `python3 -m black_numba.uci`
+> in a standard venv) in a terminal **once** and let it finish compiling. Numba
+> stores the result in an on-disk cache (`cache=True`), so every subsequent
+> launch starts in <2 s. You can also increase the *Engine Timeout* in your GUI
+> settings to tolerate the cold start.
+>
+> *Note:* This is a fully standalone UCI chess engine, not just a Lichess bot.
+> The bot mode (`black-numba-lichess`) is an optional wrapper for online play.
+
 ### Lichess bot mode
 
 `lichess.py` connects black_numba to a [Lichess bot account](https://lichess.org/api#tag/Bot)
